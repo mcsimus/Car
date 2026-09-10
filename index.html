@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vremea Ta</title>
+    <title>Vremea Ta | Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(180deg, #1e3a8a 0%, #0f172a 100%);
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             background-attachment: fixed;
             color: #e2e8f0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
         }
         .glass-card {
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
         .hide-scroll::-webkit-scrollbar {
             display: none;
@@ -26,118 +28,181 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+        /* Animații Fundal */
+        #weather-animations {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        @keyframes drift {
+            from { transform: translateX(-10vw); }
+            to { transform: translateX(110vw); }
+        }
+        @keyframes fall {
+            to { transform: translateY(100vh); }
+        }
+        .cloud-anim {
+            position: absolute;
+            color: rgba(255,255,255,0.05);
+            animation: drift linear infinite;
+        }
+        .rain-anim, .snow-anim {
+            position: absolute;
+            top: -50px;
+            background: rgba(255,255,255,0.2);
+            animation: fall linear infinite;
+        }
+        .rain-anim { width: 1px; height: 30px; background: rgba(96, 165, 250, 0.4); }
+        .snow-anim { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.6); }
     </style>
 </head>
 <body class="min-h-screen flex justify-center p-4">
-    <div class="max-w-md w-full space-y-5 pb-8">
+    
+    <!-- Container animații meteo -->
+    <div id="weather-animations"></div>
+
+    <div class="max-w-md w-full space-y-5 pb-8 relative z-10">
         
-        <!-- Header -->
-        <div class="pt-2">
-            <p class="text-blue-400 text-[10px] font-bold tracking-widest uppercase">Vremea Gratuit</p>
-            <h1 class="text-3xl font-bold text-white mt-1">Vremea Ta</h1>
+        <!-- Header: Dată, Oră, Titlu -->
+        <div class="pt-2 flex justify-between items-end border-b border-white/10 pb-3">
+            <div>
+                <p id="current-datetime" class="text-blue-400 text-xs font-semibold tracking-wider uppercase mb-1">--</p>
+                <h1 class="text-3xl font-light text-white">Vremea <span class="font-bold">Ta</span></h1>
+            </div>
+            <div class="text-right">
+                <i class="fa-solid fa-building text-gray-500 text-xl"></i>
+            </div>
         </div>
 
         <!-- Upper Controls -->
         <div class="flex space-x-3">
-            <button class="glass-card px-4 py-2.5 rounded-2xl flex items-center text-sm font-medium hover:bg-slate-700/60 transition">
-                <i class="fa-solid fa-temperature-half mr-2 text-gray-300"></i> °C
+            <button class="glass-card px-4 py-2.5 rounded-xl flex items-center text-sm font-medium hover:bg-slate-700/60 transition shadow-sm">
+                <i class="fa-solid fa-temperature-half mr-2 text-gray-400"></i> °C
             </button>
-            <button id="btn-location" class="glass-card px-4 py-2.5 rounded-2xl flex items-center text-sm font-medium flex-1 justify-center hover:bg-slate-700/60 transition">
-                <i class="fa-solid fa-location-crosshairs mr-2 text-gray-300"></i> Locația mea
+            <button id="btn-location" class="glass-card px-4 py-2.5 rounded-xl flex items-center text-sm font-medium flex-1 justify-center hover:bg-slate-700/60 transition shadow-sm">
+                <i class="fa-solid fa-location-crosshairs mr-2 text-gray-400"></i> Locația mea
             </button>
         </div>
 
         <!-- Search Bar -->
-        <form id="search-form" class="flex relative">
+        <form id="search-form" class="flex relative shadow-sm">
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
             </div>
-            <input type="text" id="search-input" placeholder="Caută orice oraș, ex. Cluj-N" class="w-full glass-card pl-11 pr-4 py-3 rounded-l-2xl outline-none focus:ring-1 focus:ring-blue-500 text-sm placeholder-gray-400">
-            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-3 rounded-r-2xl font-medium transition text-sm">Caută</button>
+            <input type="text" id="search-input" placeholder="Caută orice oraș..." class="w-full glass-card pl-11 pr-4 py-3 rounded-l-xl outline-none focus:ring-1 focus:ring-blue-500 text-sm placeholder-gray-500 transition">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-r-xl font-medium transition text-sm">Caută</button>
         </form>
 
-        <!-- City Pills -->
-        <div class="flex flex-wrap gap-2 text-sm text-gray-300">
-            <button class="city-btn glass-card px-3.5 py-1.5 rounded-full hover:bg-slate-700 transition">București</button>
-            <button class="city-btn glass-card px-3.5 py-1.5 rounded-full hover:bg-slate-700 transition">Cluj-Napoca</button>
-            <button class="city-btn glass-card px-3.5 py-1.5 rounded-full hover:bg-slate-700 transition">Timișoara</button>
-            <button class="city-btn glass-card px-3.5 py-1.5 rounded-full hover:bg-slate-700 transition">Iași</button>
-            <button class="city-btn glass-card px-3.5 py-1.5 rounded-full hover:bg-slate-700 transition">Brașov</button>
-            <button class="city-btn glass-card px-3.5 py-1.5 rounded-full hover:bg-slate-700 transition">Constanța</button>
-            <button class="city-btn glass-card px-3.5 py-1.5 rounded-full hover:bg-slate-700 transition">Sibiu</button>
+        <!-- Current Weather Card -->
+        <div class="glass-card rounded-[1.5rem] p-6 mt-6 relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-6 opacity-10">
+                <i class="fa-solid fa-map text-8xl"></i>
+            </div>
+            <h2 id="city-name" class="text-lg font-medium text-white relative z-10">Se încarcă locația...</h2>
+            
+            <div class="flex items-center justify-between mt-2 relative z-10">
+                <div class="text-7xl font-bold text-white tracking-tighter"><span id="current-temp">--</span>°</div>
+                <i id="current-icon" class="fa-solid fa-sun text-6xl text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.3)]"></i>
+            </div>
+            <p class="text-gray-300 text-sm mt-2 relative z-10 font-medium"><span id="current-desc">--</span> <span class="text-gray-500 font-normal">| resimțit ca <span id="feels-like">--</span>°C</span></p>
+
+            <div class="grid grid-cols-3 gap-3 mt-6 relative z-10">
+                <div class="bg-slate-900/50 rounded-xl p-3 text-center border border-white/5">
+                    <i class="fa-solid fa-wind text-gray-400 mb-1 text-lg"></i>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-wide">Vânt</div>
+                    <div class="font-semibold text-sm text-white"><span id="wind-speed">--</span> km/h</div>
+                </div>
+                <div class="bg-slate-900/50 rounded-xl p-3 text-center border border-white/5">
+                    <i class="fa-solid fa-droplet text-blue-400 mb-1 text-lg"></i>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-wide">Umiditate</div>
+                    <div class="font-semibold text-sm text-white"><span id="humidity">--</span>%</div>
+                </div>
+                <div class="bg-slate-900/50 rounded-xl p-3 text-center border border-white/5">
+                    <i class="fa-solid fa-umbrella text-indigo-400 mb-1 text-lg"></i>
+                    <div class="text-[10px] text-gray-400 uppercase tracking-wide">Precipitații</div>
+                    <div class="font-semibold text-sm text-white"><span id="precip">--</span> mm</div>
+                </div>
+            </div>
         </div>
 
-        <!-- Current Weather Card -->
-        <div class="glass-card rounded-[2rem] p-6 shadow-lg border-t border-white/10 mt-6">
-            <h2 id="city-name" class="text-base font-medium text-white">Constanța, România</h2>
-            <div class="flex items-center justify-between mt-1">
-                <div class="text-7xl font-bold text-white tracking-tighter"><span id="current-temp">--</span>°C</div>
-                <i id="current-icon" class="fa-solid fa-sun text-5xl text-blue-400 drop-shadow-md"></i>
+        <!-- Car Wash Index (Modul Nou) -->
+        <div class="glass-card rounded-2xl p-5 border-l-4 border-blue-500">
+            <div class="flex items-center justify-between">
+                <div class="pr-4">
+                    <h3 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center">
+                        <i class="fa-solid fa-droplet-slash mr-2"></i> Index Spălare Auto
+                    </h3>
+                    <p id="car-wash-status" class="text-sm font-medium text-white leading-tight">Se calculează...</p>
+                </div>
+                <div class="bg-slate-900/50 p-3 rounded-full border border-white/5 shadow-inner shrink-0">
+                    <i id="car-wash-icon" class="fa-solid fa-car-side text-2xl text-gray-500"></i>
+                </div>
             </div>
-            <p class="text-gray-300 text-sm mt-3"><span id="current-desc">Se încarcă...</span> · se resimte ca <span id="feels-like">--</span>°C</p>
-
-            <div class="grid grid-cols-2 gap-3 mt-6">
-                <div class="glass-card rounded-2xl p-3 bg-slate-800/40">
-                    <div class="text-gray-400 text-xs flex items-center mb-1.5"><i class="fa-solid fa-wind mr-2"></i> Vânt</div>
-                    <div class="font-medium text-sm text-white"><span id="wind-speed">--</span> km/h</div>
-                </div>
-                <div class="glass-card rounded-2xl p-3 bg-slate-800/40">
-                    <div class="text-gray-400 text-xs flex items-center mb-1.5"><i class="fa-solid fa-droplet mr-2"></i> Umiditate</div>
-                    <div class="font-medium text-sm text-white"><span id="humidity">--</span>%</div>
-                </div>
-                <div class="glass-card rounded-2xl p-3 bg-slate-800/40 col-span-2 w-1/2 pr-2">
-                    <div class="text-gray-400 text-xs flex items-center mb-1.5"><i class="fa-solid fa-temperature-empty mr-2"></i> Precipitații</div>
-                    <div class="font-medium text-sm text-white"><span id="precip">--</span> mm</div>
-                </div>
+            
+            <div class="mt-4 pt-3 border-t border-white/10 grid grid-cols-1 gap-1.5 text-[10px] text-gray-400">
+                <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-green-500 mr-2 shadow-[0_0_5px_#22c55e]"></span> <span><strong>Verde:</strong> Fără ploaie/ninsoare în următoarele 3 zile.</span></div>
+                <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-orange-500 mr-2 shadow-[0_0_5px_#f97316]"></span> <span><strong>Portocaliu:</strong> Risc de precipitații în zilele 2 sau 3.</span></div>
+                <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-red-500 mr-2 shadow-[0_0_5px_#ef4444]"></span> <span><strong>Roșu:</strong> Precipitații probabile în următoarele 24 de ore.</span></div>
             </div>
         </div>
 
         <!-- Hourly Forecast -->
-        <div class="glass-card rounded-3xl p-5 border-t border-white/5">
+        <div class="glass-card rounded-2xl p-5">
             <h3 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">Următoarele 24 de ore</h3>
-            <div id="hourly-container" class="flex overflow-x-auto space-x-3 hide-scroll pb-1">
-                <!-- Javascript va injecta orele aici -->
+            <div id="hourly-container" class="flex overflow-x-auto space-x-3 hide-scroll pb-2">
+                <!-- Injected via JS -->
             </div>
         </div>
 
         <!-- 7 Days Forecast -->
-        <div class="glass-card rounded-3xl p-5 border-t border-white/5">
+        <div class="glass-card rounded-2xl p-5">
             <h3 class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">Prognoza pe 7 zile</h3>
-            <div id="daily-container" class="space-y-4">
-                <!-- Javascript va injecta zilele aici -->
+            <div id="daily-container" class="space-y-3">
+                <!-- Injected via JS -->
             </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="text-center text-xs text-gray-500 pt-2 flex justify-between items-center px-1">
-            <span>Date de la Open-Meteo.</span>
-            <span class="flex items-center text-gray-400"><i class="fa-solid fa-bolt mr-1 text-blue-500"></i> Personalizat</span>
         </div>
     </div>
 
     <script>
+        // Actualizare Ceas & Dată
+        function updateDateTime() {
+            const now = new Date();
+            const optionsDate = { weekday: 'long', day: 'numeric', month: 'long' };
+            let dateStr = now.toLocaleDateString('ro-RO', optionsDate);
+            const timeStr = now.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+            
+            // Capitalizare prima literă
+            dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+            document.getElementById('current-datetime').innerHTML = `${dateStr} &bull; ${timeStr}`;
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        // Mappings cu culori specifice
         const WMO_CODES = {
-            0: { desc: 'Cer senin', icon: 'fa-sun' },
-            1: { desc: 'Preponderent senin', icon: 'fa-sun' },
-            2: { desc: 'Parțial înnorat', icon: 'fa-cloud-sun' },
-            3: { desc: 'Înnorat', icon: 'fa-cloud' },
-            45: { desc: 'Ceață', icon: 'fa-smog' },
-            48: { desc: 'Ceață înghețată', icon: 'fa-smog' },
-            51: { desc: 'Burniță ușoară', icon: 'fa-cloud-rain' },
-            53: { desc: 'Burniță moderată', icon: 'fa-cloud-rain' },
-            55: { desc: 'Burniță densă', icon: 'fa-cloud-rain' },
-            61: { desc: 'Ploaie ușoară', icon: 'fa-cloud-rain' },
-            63: { desc: 'Ploaie moderată', icon: 'fa-cloud-showers-water' },
-            65: { desc: 'Ploaie puternică', icon: 'fa-cloud-showers-heavy' },
-            71: { desc: 'Ninsoare ușoară', icon: 'fa-snowflake' },
-            73: { desc: 'Ninsoare moderată', icon: 'fa-snowflake' },
-            75: { desc: 'Ninsoare puternică', icon: 'fa-snowflake' },
-            80: { desc: 'Averse ușoare', icon: 'fa-cloud-rain' },
-            81: { desc: 'Averse moderate', icon: 'fa-cloud-showers-heavy' },
-            82: { desc: 'Averse violente', icon: 'fa-cloud-showers-heavy' },
-            95: { desc: 'Furtună', icon: 'fa-cloud-bolt' },
-            96: { desc: 'Furtună cu grindină', icon: 'fa-cloud-bolt' },
-            99: { desc: 'Furtună severă', icon: 'fa-cloud-bolt' },
+            0: { desc: 'Cer senin', icon: 'fa-sun', color: 'text-yellow-400' },
+            1: { desc: 'Preponderent senin', icon: 'fa-sun', color: 'text-yellow-400' },
+            2: { desc: 'Parțial înnorat', icon: 'fa-cloud-sun', color: 'text-gray-300' },
+            3: { desc: 'Înnorat', icon: 'fa-cloud', color: 'text-gray-400' },
+            45: { desc: 'Ceață', icon: 'fa-smog', color: 'text-gray-400' },
+            48: { desc: 'Ceață înghețată', icon: 'fa-smog', color: 'text-gray-400' },
+            51: { desc: 'Burniță ușoară', icon: 'fa-cloud-rain', color: 'text-blue-300' },
+            53: { desc: 'Burniță moderată', icon: 'fa-cloud-rain', color: 'text-blue-400' },
+            55: { desc: 'Burniță densă', icon: 'fa-cloud-rain', color: 'text-blue-500' },
+            61: { desc: 'Ploaie ușoară', icon: 'fa-cloud-rain', color: 'text-blue-300' },
+            63: { desc: 'Ploaie moderată', icon: 'fa-cloud-showers-water', color: 'text-blue-400' },
+            65: { desc: 'Ploaie puternică', icon: 'fa-cloud-showers-heavy', color: 'text-blue-500' },
+            71: { desc: 'Ninsoare ușoară', icon: 'fa-snowflake', color: 'text-white' },
+            73: { desc: 'Ninsoare moderată', icon: 'fa-snowflake', color: 'text-white' },
+            75: { desc: 'Ninsoare puternică', icon: 'fa-snowflake', color: 'text-white' },
+            80: { desc: 'Averse ușoare', icon: 'fa-cloud-rain', color: 'text-blue-400' },
+            81: { desc: 'Averse moderate', icon: 'fa-cloud-showers-heavy', color: 'text-blue-500' },
+            82: { desc: 'Averse violente', icon: 'fa-cloud-showers-heavy', color: 'text-blue-600' },
+            95: { desc: 'Furtună', icon: 'fa-cloud-bolt', color: 'text-purple-400' },
+            96: { desc: 'Furtună cu grindină', icon: 'fa-cloud-bolt', color: 'text-purple-500' },
+            99: { desc: 'Furtună severă', icon: 'fa-cloud-bolt', color: 'text-purple-600' },
         };
 
         const daysRO = ['Dum.', 'Lun.', 'Mar.', 'Mie.', 'Joi', 'Vin.', 'Sâm.'];
@@ -148,7 +213,7 @@
                 const data = await res.json();
                 return data.results && data.results.length > 0 ? data.results[0] : null;
             } catch (err) {
-                console.error("Eroare la obținerea coordonatelor:", err);
+                console.error("Eroare coordonate:", err);
                 return null;
             }
         }
@@ -157,6 +222,77 @@
             const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto`;
             const res = await fetch(url);
             return await res.json();
+        }
+
+        // Generator de animații meteo (Nori, Ploaie, Ninsoare)
+        function renderWeatherAnimations(code) {
+            const container = document.getElementById('weather-animations');
+            container.innerHTML = ''; 
+            
+            // Adaugă nori pentru majoritatea stărilor (exceptând cer perfect senin)
+            if(code !== 0 && code !== 1) {
+                for(let i=0; i<4; i++) {
+                    const cloud = document.createElement('i');
+                    cloud.className = 'fa-solid fa-cloud cloud-anim';
+                    cloud.style.top = `${Math.random() * 40}%`;
+                    cloud.style.fontSize = `${Math.random() * 6 + 4}rem`;
+                    cloud.style.animationDuration = `${Math.random() * 30 + 30}s`;
+                    cloud.style.animationDelay = `-${Math.random() * 30}s`;
+                    container.appendChild(cloud);
+                }
+            }
+            
+            // Adaugă ploaie
+            if([51,53,55,61,63,65,80,81,82,95,96,99].includes(code)) {
+                for(let i=0; i<20; i++) {
+                    const drop = document.createElement('div');
+                    drop.className = 'rain-anim';
+                    drop.style.left = `${Math.random() * 100}vw`;
+                    drop.style.animationDuration = `${Math.random() * 0.5 + 0.5}s`;
+                    drop.style.animationDelay = `${Math.random()}s`;
+                    container.appendChild(drop);
+                }
+            }
+
+            // Adaugă ninsoare
+            if([71,73,75].includes(code)) {
+                for(let i=0; i<25; i++) {
+                    const flake = document.createElement('div');
+                    flake.className = 'snow-anim';
+                    flake.style.left = `${Math.random() * 100}vw`;
+                    flake.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                    flake.style.animationDelay = `${Math.random() * 2}s`;
+                    container.appendChild(flake);
+                }
+            }
+        }
+
+        function updateCarWashIndex(weather) {
+            const probToday = weather.daily.precipitation_probability_max[0] || 0;
+            const probTmrw = weather.daily.precipitation_probability_max[1] || 0;
+            const probDay3 = weather.daily.precipitation_probability_max[2] || 0;
+            
+            const icon = document.getElementById('car-wash-icon');
+            const status = document.getElementById('car-wash-status');
+            const card = icon.closest('.glass-card');
+
+            // Resetăm clasele
+            icon.className = 'fa-solid fa-car-side text-3xl transition-colors duration-500';
+            card.className = 'glass-card rounded-2xl p-5 border-l-4 transition-colors duration-500';
+
+            if (probToday > 20 || probTmrw > 20) {
+                icon.classList.add('text-red-500', 'drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]');
+                card.classList.add('border-red-500');
+                status.textContent = 'Condiții nefavorabile. Precipitații în următoarele 24h.';
+            } else if (probDay3 > 20) {
+                icon.classList.add('text-orange-500', 'drop-shadow-[0_0_8px_rgba(249,115,22,0.5)]');
+                card.classList.add('border-orange-500');
+                status.textContent = 'Acceptabil, dar se anunță vreme rea în 2-3 zile.';
+            } else {
+                icon.classList.add('text-green-500', 'drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]');
+                card.classList.add('border-green-500');
+                status.textContent = 'Vreme excelentă! Fără precipitații în următoarele 3 zile.';
+            }
         }
 
         function updateUI(weather, locationName, country) {
@@ -169,9 +305,15 @@
             
             const codeInfo = WMO_CODES[weather.current.weather_code] || WMO_CODES[0];
             document.getElementById('current-desc').textContent = codeInfo.desc;
-            document.getElementById('current-icon').className = `fa-solid ${codeInfo.icon} text-5xl text-blue-400 drop-shadow-md`;
+            
+            // Icon principal cu umbră dinamică
+            const iconEl = document.getElementById('current-icon');
+            iconEl.className = `fa-solid ${codeInfo.icon} text-6xl ${codeInfo.color}`;
+            
+            renderWeatherAnimations(weather.current.weather_code);
+            updateCarWashIndex(weather);
 
-            // Afișare pentru următoarele 24h (din oră în oră)
+            // 24h Forecast
             const hourlyContainer = document.getElementById('hourly-container');
             hourlyContainer.innerHTML = '';
             const currentHourIdx = weather.hourly.time.findIndex(t => new Date(t) >= new Date());
@@ -184,15 +326,15 @@
                 const hCodeInfo = WMO_CODES[weather.hourly.weather_code[i]] || WMO_CODES[0];
                 
                 hourlyContainer.innerHTML += `
-                    <div class="glass-card bg-slate-800/40 rounded-2xl p-3 min-w-[70px] flex flex-col items-center justify-center space-y-2 border border-white/5">
-                        <div class="text-xs text-gray-300">${hourStr}</div>
-                        <i class="fa-solid ${hCodeInfo.icon} text-blue-400 text-lg"></i>
+                    <div class="bg-slate-900/40 rounded-xl p-3 min-w-[65px] flex flex-col items-center justify-center space-y-2 border border-white/5 shadow-sm hover:bg-slate-800/60 transition">
+                        <div class="text-[11px] text-gray-400 font-medium">${hourStr}</div>
+                        <i class="fa-solid ${hCodeInfo.icon} ${hCodeInfo.color} text-xl"></i>
                         <div class="font-bold text-sm text-white">${temp}°</div>
                     </div>
                 `;
             }
 
-            // Prognoza pe 7 zile
+            // 7 Days Forecast
             const dailyContainer = document.getElementById('daily-container');
             dailyContainer.innerHTML = '';
             for(let i = 0; i < 7; i++) {
@@ -205,11 +347,11 @@
                 const dCodeInfo = WMO_CODES[weather.daily.weather_code[i]] || WMO_CODES[0];
 
                 dailyContainer.innerHTML += `
-                    <div class="flex items-center justify-between text-sm border-b border-gray-700/50 pb-3 last:border-0 last:pb-0">
-                        <div class="w-16 font-medium text-white">${dayName}</div>
-                        <div class="w-8 flex justify-center"><i class="fa-solid ${dCodeInfo.icon} text-blue-400"></i></div>
-                        <div class="w-12 text-center text-gray-400 text-xs">${precipProb}%</div>
-                        <div class="w-24 text-right font-medium text-white">${maxTemp}° <span class="text-gray-400 font-normal ml-1">/ ${minTemp}°</span></div>
+                    <div class="flex items-center justify-between text-sm bg-slate-900/30 rounded-xl p-3 border border-white/5">
+                        <div class="w-16 font-semibold text-gray-200">${dayName}</div>
+                        <div class="w-8 flex justify-center"><i class="fa-solid ${dCodeInfo.icon} ${dCodeInfo.color} text-lg"></i></div>
+                        <div class="w-14 text-center text-[11px] text-blue-300 bg-blue-900/20 rounded-md py-0.5"><i class="fa-solid fa-droplet text-[9px] mr-1"></i>${precipProb}%</div>
+                        <div class="w-24 text-right font-bold text-white">${maxTemp}° <span class="text-gray-500 font-medium ml-1">/ ${minTemp}°</span></div>
                     </div>
                 `;
             }
@@ -221,14 +363,14 @@
                 const weather = await getWeatherData(location.latitude, location.longitude);
                 updateUI(weather, location.name, location.country_code);
             } else {
-                alert("Orașul nu a fost găsit. Te rugăm să încerci din nou.");
+                alert("Orașul nu a fost găsit.");
             }
         }
 
-        // Inițializare aplicație
+        // Implicit
         loadCity('Constanța');
 
-        // Bara de căutare
+        // Search
         document.getElementById('search-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const city = document.getElementById('search-input').value.trim();
@@ -236,31 +378,17 @@
             document.getElementById('search-input').value = '';
         });
 
-        // Butoanele rapide (Pilule)
-        document.querySelectorAll('.city-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                loadCity(btn.innerText);
-            });
-        });
-
-        // Funcția de localizare
+        // Location
         document.getElementById('btn-location').addEventListener('click', () => {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(async (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
                     try {
-                        const weather = await getWeatherData(lat, lon);
-                        // Open-Meteo nu returnează numele orașului pentru coordonate brute, așa că folosim un nume generic
+                        const weather = await getWeatherData(position.coords.latitude, position.coords.longitude);
                         updateUI(weather, "Locația ta", "Curentă");
                     } catch (err) {
-                        alert("Eroare la preluarea datelor meteo.");
+                        alert("Eroare date meteo.");
                     }
-                }, () => {
-                    alert("Nu am putut accesa locația. Verifică permisiunile browserului.");
-                });
-            } else {
-                alert("Geolocația nu este suportată de acest browser.");
+                }, () => alert("Permisiune locație refuzată."));
             }
         });
     </script>
