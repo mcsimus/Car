@@ -424,7 +424,7 @@
             dailyContainer.innerHTML = '';
             for(let i = todayIdx; i < todayIdx + 7; i++) {
                 if(!weather.daily.time[i]) break;
-                const dateObj = new Date(weather.daily.time[i]);
+                const dateObj = new Date(weather.daily.time[i]+ "T12:00:00");
                 const isToday = i === todayIdx;
                 const dayName = isToday ? 'Astăzi' : daysRO[dateObj.getDay()];
                 const minTemp = formatTemp(weather.daily.temperature_2m_min[i]);
