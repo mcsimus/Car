@@ -639,16 +639,16 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 async function openTrainModal() {
     const origName = document.getElementById('trip-origin').value.trim();
     const destName = document.getElementById('trip-dest').value.trim();
-    // Preluăm valoarea introdusă de utilizator la Dată și Oră
     const datetimeInput = document.getElementById('trip-datetime').value;
 
     if(!origName || !destName) {
         alert("Te rog completează Plecarea și Destinația întâi!");
         return;
     }
+    
     document.getElementById('train-modal').classList.remove('hidden');
     const listContainer = document.getElementById('train-list');
-    listContainer.innerHTML = '<div class="text-center text-slate-500 dark:text-slate-400 py-6"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i><br>Se caută rute disponibile...</div>';
+    listContainer.innerHTML = '<div class="text-center text-slate-500 dark:text-slate-400 py-6"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i><br>Se interoghează API-ul CFR...</div>';
 
     try {
         const origCoords = await getCoordinates(origName);
@@ -659,40 +659,54 @@ async function openTrainModal() {
         }
 
         const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
-        
-        // Stabilim momentul de bază: ce a introdus utilizatorul (sau acum, dacă e gol)
-        let baseDate = new Date(datetimeInput || new Date());
-        
-        let html = '';
-        
-        // Definim 4 trenuri cu viteze diferite și intervale realiste de plecare
-        // delayMins = la câte minute DUPĂ ora introdusă de utilizator pleacă trenul
-        const trains = [
-            { type: 'IR 1582', speed: 65, color: 'text-blue-600 dark:text-blue-400', delayMins: 15 },
-            { type: 'R 8001',  speed: 45, color: 'text-slate-600 dark:text-slate-300', delayMins: 55 },
-            { type: 'IC 531',  speed: 85, color: 'text-emerald-600 dark:text-emerald-400', delayMins: 130 },
-            { type: 'IR 1634', speed: 65, color: 'text-blue-600 dark:text-blue-400', delayMins: 210 }
-        ];
-
         const destNameClean = destName.replace(/'/g, "\\'");
+        
+        // ==========================================
+        // ÎNLOCUIEȘTE AICI CU URL-UL WORKER-ULUI TĂU
+        // ==========================================
+        const WORKER_URL = "https://cfr-api-infofer.spamikus01.workers.dev/";
+        
+        const apiUrl = new URL(WORKER_URL);
+        apiUrl.searchParams.append("orig", origName);
+        apiUrl.searchParams.append("dest", destName);
+        apiUrl.searchParams.append("dist", dist);
+        if (datetimeInput) apiUrl.searchParams.append("datetime", datetimeInput);
 
-        trains.forEach((tr) => {
-            const durationHrs = dist / tr.speed;
-            
-            // Calculăm ora exactă de plecare adăugând minutele de așteptare la ora selectată
-            const dep = new Date(baseDate.getTime() + (tr.delayMins * 60000)); 
-            const arr = new Date(dep.getTime() + (durationHrs * 3600000));
+        const response = await fetch(apiUrl.toString());
+        const data = await response.json();
+
+        if (data.error) {
+            listContainer.innerHTML = `<div class="text-center text-rose-500 dark:text-rose-400 py-4">${data.error}</div>`;
+            return;
+        }
+
+        // Verificăm dacă datele sunt simulate de Worker
+        const isSimulated = data.status === "SIMULATED_FALLBACK";
+
+        let html = '';
+        data.trains.forEach((tr) => {
+            const dep = new Date(tr.departureISO);
+            const arr = new Date(tr.arrivalISO);
             
             const depStr = dep.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
             const arrStr = arr.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
             const dateStr = dep.toLocaleDateString('ro-RO', {day: '2-digit', month: '2-digit'});
             
-            const h = Math.floor(durationHrs);
-            const m = Math.round((durationHrs - h) * 60);
+            const h = Math.floor(tr.durationHrs);
+            const m = Math.round((tr.durationHrs - h) * 60);
 
+            // Generăm HTML-ul bulinei roșii doar dacă datele sunt simulate
+            const warningDot = isSimulated ? 
+                `<button onclick="showSimulatedWarning(event)" class="absolute -top-2 -right-2 bg-rose-500 text-white w-6 h-6 rounded-full text-xs font-bold shadow-md flex items-center justify-center border-2 border-white dark:border-slate-800 hover:bg-rose-600 transition z-10" title="Atenție! Date simulate">?</button>` 
+                : '';
+
+            // Cardul primește clasa 'relative' pentru a poziționa bulina
             html += `
-                <div class="bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition cursor-pointer flex justify-between items-center" 
-                     onclick="selectCfrTrain('${tr.type}', '${dep.toISOString()}', ${durationHrs}, '${destNameClean}')">
+                <div class="relative bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition cursor-pointer flex justify-between items-center" 
+                     onclick="selectCfrTrain('${tr.type}', '${tr.departureISO}', ${tr.durationHrs}, '${destNameClean}')">
+                    
+                    ${warningDot}
+                    
                     <div>
                         <div class="${tr.color} font-bold text-sm mb-1">
                             <i class="fa-solid fa-train mr-1"></i> ${tr.type}
@@ -710,10 +724,20 @@ async function openTrainModal() {
                 </div>
             `;
         });
+        
         listContainer.innerHTML = html;
+
     } catch (err) {
-        listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Eroare la procesarea rutelor.</div>';
+        console.error(err);
+        listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Eroare conexiune cu API-ul. Verificați link-ul Worker-ului.</div>';
     }
+}
+
+// Funcția apelată când utilizatorul dă click pe bulina roșie cu semnul întrebării
+window.showSimulatedWarning = function(event) {
+    // Împiedicăm declanșarea funcției selectCfrTrain de pe cardul părinte
+    event.stopPropagation();
+    alert("Atenție! Conexiunea cu serverele Infofer a fost blocată temporar. Aceste trenuri au fost generate matematic pentru demonstrație și nu reprezintă un orar real.");
 }
 
 function closeTrainModal() {
