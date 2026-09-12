@@ -592,7 +592,6 @@ flatpickr("#trip-datetime", {
 function openTripModal() {
     document.getElementById('trip-modal').classList.remove('hidden');
     const fp = document.getElementById('trip-datetime')._flatpickr;
-    // Acum folosim new Date() curat, Flatpickr stie nativ sa foloseasca ora ta locală corect
     if(fp) fp.setDate(new Date());
     fillCurrentLocationTrip(); 
 }
@@ -687,16 +686,31 @@ async function openTrainModal() {
                 const h = Math.floor(tr.durationHrs);
                 const m = Math.round((tr.durationHrs - h) * 60);
 
-                const trainNum = tr.trainNumber || "1582";
+                const trainNum = tr.trainNumber || "0000";
                 const dateFormatted = `${String(dep.getDate()).padStart(2, '0')}.${String(dep.getMonth() + 1).padStart(2, '0')}.${dep.getFullYear()}`;
                 
-                const infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Tren/${trainNum}?Date=${dateFormatted}`;
+                const isTransfer = tr.isTransfer === true;
+                let infoferLink = "";
+                
+                // NOUL COD: Formare automată URL complet Itinerarii Infofer cu parametri exacți
+                if(isTransfer) {
+                    const cleanOrig = origName.split(',')[0].trim();
+                    const cleanDest = destName.split(',')[0].trim();
+                    // Extragem minutele scurse de la miezul nopții pentru a trimite exact ora selectată
+                    const minsInDay = dep.getHours() * 60 + dep.getMinutes();
+                    
+                    infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Itineraries?DepartureStationName=${encodeURIComponent(cleanOrig)}&ArrivalStationName=${encodeURIComponent(cleanDest)}&DepartureDate=${dateFormatted}&TimeSelectionId=0&MinutesInDay=${minsInDay}&OrderingTypeId=0&ConnectionsTypeId=1&BetweenTrainsMinimumMinutes=&ChangeStationName=`;
+                } else {
+                    infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Tren/${trainNum}?Date=${dateFormatted}`;
+                }
+
+                const iconClass = isTransfer ? "fa-route" : "fa-train";
 
                 html += `
                     <div class="bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition flex justify-between items-center cursor-pointer" 
-                         onclick="selectCfrTrain('${tr.type}', '${tr.departureISO}', ${tr.durationHrs}, '${destName.replace(/'/g, "\\'")}', '${infoferLink}')">
+                         onclick="selectCfrTrain('${tr.type}', '${tr.departureISO}', ${tr.durationHrs}, '${destName.replace(/'/g, "\\'")}', '${infoferLink}', ${isTransfer})">
                         <div>
-                            <div class="${tr.color} font-bold text-sm mb-1"><i class="fa-solid fa-train mr-1"></i> ${tr.type}</div>
+                            <div class="${tr.color} font-bold text-sm mb-1"><i class="fa-solid ${iconClass} mr-1"></i> ${tr.type}</div>
                             <div class="text-[10px] text-slate-500 dark:text-slate-300 uppercase tracking-wide">
                                 Plec: <span class="text-slate-800 dark:text-white font-bold text-xs">${depStr}</span> &bull; 
                                 Sos: <span class="text-slate-800 dark:text-white font-bold text-xs">${arrStr}</span>
@@ -711,7 +725,7 @@ async function openTrainModal() {
             });
             listContainer.innerHTML = html;
         } else {
-            listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Nu s-au găsit trenuri directe după ora selectată.</div>';
+            listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Eroare la procesarea rutelor.</div>';
         }
     } catch (err) {
         listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Eroare la preluarea rutelor.</div>';
@@ -722,10 +736,9 @@ function closeTrainModal() {
     document.getElementById('train-modal').classList.add('hidden');
 }
 
-function selectCfrTrain(type, depIso, durationHrs, destCity, infoferLink) {
+function selectCfrTrain(type, depIso, durationHrs, destCity, infoferLink, isTransfer) {
     const d = new Date(depIso);
     const fp = document.getElementById('trip-datetime')._flatpickr;
-    // Eliminat d.getTimezoneOffset() - browserul va afișa acum direct ora ta locală!
     if(fp) fp.setDate(d);
     
     let station = "Gara " + destCity;
@@ -736,7 +749,7 @@ function selectCfrTrain(type, depIso, durationHrs, destCity, infoferLink) {
     else if (cityLow.includes('iasi') || cityLow.includes('iași')) station = "Iași";
     else if (cityLow.includes('constan')) station = "Constanța";
     
-    selectedTrain = { type: type, durationHrs: durationHrs, destStation: station, link: infoferLink };
+    selectedTrain = { type: type, durationHrs: durationHrs, destStation: station, link: infoferLink, isTransfer: isTransfer };
     closeTrainModal();
     document.getElementById('btn-train-cfr').classList.add('ring-2', 'ring-emerald-400');
 }
@@ -774,7 +787,13 @@ async function processTrip() {
         let isTrainRoute = (tripMode === 'transit' && selectedTrain !== null);
 
         if (isTrainRoute) {
-            durationHrs = selectedTrain.durationHrs;
+            if (selectedTrain.isTransfer) {
+                const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
+                durationHrs = (dist / 60) + 1.5;
+                selectedTrain.durationHrs = durationHrs;
+            } else {
+                durationHrs = selectedTrain.durationHrs;
+            }
         } else {
             const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
             const speed = tripMode === 'car' ? 75 : 50;
@@ -795,7 +814,7 @@ async function processTrip() {
         document.getElementById('trip-arrival').textContent = arrDate.toLocaleString('ro-RO', arrOptions);
         
         const stationTag = document.getElementById('trip-station');
-        if (isTrainRoute) {
+        if (isTrainRoute && !selectedTrain.isTransfer) {
             document.getElementById('trip-station-name').textContent = selectedTrain.destStation;
             stationTag.classList.remove('hidden');
         } else {
