@@ -274,7 +274,7 @@
                 <div>
                     <label class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide font-bold mb-1.5 block">Dată și Oră Plecare</label>
                     <div class="flex space-x-2">
-                        <input type="datetime-local" id="trip-datetime" class="flex-1 bg-slate-100 dark:bg-slate-900/60 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-slate-800 dark:text-white text-sm outline-none focus:border-emerald-500 transition">
+                        <input type="datetime-local" id="trip-datetime" onclick="this.showPicker()" class="flex-1 bg-slate-100 dark:bg-slate-900/60 dark:[color-scheme:dark] border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-slate-800 dark:text-white text-sm outline-none focus:border-emerald-500 transition cursor-pointer">
                         <button id="btn-train-cfr" onclick="openTrainModal()" class="hidden bg-sky-600 hover:bg-sky-500 text-white px-3 py-2 rounded-xl border border-sky-400/50 transition flex items-center justify-center shadow-md">
                             <i class="fa-solid fa-train-subway"></i>
                         </button>
