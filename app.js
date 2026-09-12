@@ -527,7 +527,7 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
 
         timeout = setTimeout(async () => {
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&addressdetails=1&limit=5&accept-language=ro`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&addressdetails=1&limit=8&accept-language=ro`);
                 const data = await res.json();
                 
                 if (data && data.length > 0) {
@@ -570,6 +570,14 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
 attachAutocomplete('search-input', 'main-suggestions', (name) => { loadCity(name); document.getElementById('search-input').value = ''; });
 attachAutocomplete('trip-origin', 'orig-suggestions', null);
 attachAutocomplete('trip-dest', 'dest-suggestions', null);
+
+// Permite modificarea manuală a datei/orei fără a bloca selecția
+document.getElementById('trip-datetime').addEventListener('input', () => {
+    selectedTrain = null;
+    document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
+    document.getElementById('trip-summary').classList.add('hidden');
+    document.getElementById('trip-results').classList.add('hidden');
+});
 
 let tripMode = 'car';
 let selectedTrain = null; 
