@@ -591,10 +591,9 @@ flatpickr("#trip-datetime", {
 
 function openTripModal() {
     document.getElementById('trip-modal').classList.remove('hidden');
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     const fp = document.getElementById('trip-datetime')._flatpickr;
-    if(fp) fp.setDate(now);
+    // Acum folosim new Date() curat, Flatpickr stie nativ sa foloseasca ora ta locală corect
+    if(fp) fp.setDate(new Date());
     fillCurrentLocationTrip(); 
 }
 
@@ -690,6 +689,7 @@ async function openTrainModal() {
 
                 const trainNum = tr.trainNumber || "1582";
                 const dateFormatted = `${String(dep.getDate()).padStart(2, '0')}.${String(dep.getMonth() + 1).padStart(2, '0')}.${dep.getFullYear()}`;
+                
                 const infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Tren/${trainNum}?Date=${dateFormatted}`;
 
                 html += `
@@ -724,8 +724,8 @@ function closeTrainModal() {
 
 function selectCfrTrain(type, depIso, durationHrs, destCity, infoferLink) {
     const d = new Date(depIso);
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     const fp = document.getElementById('trip-datetime')._flatpickr;
+    // Eliminat d.getTimezoneOffset() - browserul va afișa acum direct ora ta locală!
     if(fp) fp.setDate(d);
     
     let station = "Gara " + destCity;
