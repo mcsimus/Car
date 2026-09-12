@@ -781,7 +781,7 @@ async function processTrip() {
         const h = Math.floor(durationHrs);
         const m = Math.round((durationHrs - h) * 60);
         
-        const trainTypeText = isTrainRoute ? ` (<a href="${selectedTrain.link}" target="_blank" class="underline text-sky-600 dark:text-sky-400 hover:text-sky-500">${selectedTrain.type} <i class="fa-solid fa-external-link text-[10px]"></i></a>)` : '';
+        const trainTypeText = isTrainRoute ? ` (<a href="${selectedTrain.link}" target="_blank" class="underline text-sky-600 dark:text-sky-400 hover:text-sky-500">${selectedTrain.type} <i class="fa-solid fa-external-link text-xs ml-0.5"></i></a>)` : '';
         document.getElementById('trip-duration').innerHTML = `${h}h ${m}m <span class="text-emerald-600 dark:text-emerald-400 font-normal">${trainTypeText}</span>`;
         
         const arrOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' };
