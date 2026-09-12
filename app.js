@@ -2,7 +2,7 @@
 // 1. STARE GLOBALĂ ȘI TEMĂ
 // ==========================================
 let currentUnit = localStorage.getItem('tempUnit') || 'C';
-let currentTheme = localStorage.getItem('appTheme') || 'auto'; // 'light', 'dark', 'auto'
+let currentTheme = localStorage.getItem('appTheme') || 'auto';
 let lastWeatherData = null;
 let lastLocName = '';
 let lastCountry = '';
@@ -43,7 +43,7 @@ applyTheme();
 const WMO_CODES = {
     0: { desc: 'Cer senin', icon: 'fa-sun', color: 'text-yellow-400' },
     1: { desc: 'Preponderent senin', icon: 'fa-sun', color: 'text-yellow-400' },
-    2: { desc: 'Parțial înnorat', icon: 'fa-cloud-sun', color: 'text-sky-300 dark:text-sky-200' },
+    2: { desc: 'Parțial înnorat', icon: 'fa-cloud-sun', color: 'text-sky-400 dark:text-sky-300' },
     3: { desc: 'Înnorat', icon: 'fa-cloud', color: 'text-slate-400 dark:text-white' },
     45: { desc: 'Ceață', icon: 'fa-smog', color: 'text-slate-400 dark:text-slate-300' },
     48: { desc: 'Ceață înghețată', icon: 'fa-smog', color: 'text-slate-400 dark:text-slate-300' },
@@ -209,7 +209,7 @@ function renderWeatherAnimations(code) {
     if([71,73,75,77,85,86].includes(code)) {
         for(let i=0; i<25; i++) {
             const flake = document.createElement('div');
-            flake.className = 'snow-anim bg-white/70';
+            flake.className = 'snow-anim bg-white/80';
             flake.style.left = `${Math.random() * 100}vw`;
             flake.style.animationDuration = `${Math.random() * 3 + 2}s`;
             flake.style.animationDelay = `${Math.random() * 2}s`;
@@ -305,7 +305,8 @@ function getEquipmentTags(temp, code, wind, precipProb, isDay = true) {
     if (wind >= 25) tags.push({ icon: '💨', text: 'Vânt' });
     if (tags.length === 0) tags.push({ icon: '👍', text: 'Lejer' });
     
-    return tags.map(t => `<span class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-white/5 text-[10px] text-slate-700 dark:text-slate-200 px-2 py-1.5 rounded-lg flex items-center shadow-sm cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"><span class="w-4 text-center text-sm">${t.icon}</span> <span class="ml-1 truncate">${t.text}</span></span>`).join('');
+    // Adăugat dark:border-slate-600 la tag-uri
+    return tags.map(t => `<span class="bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 text-[10px] text-slate-700 dark:text-slate-200 px-2 py-1.5 rounded-lg flex items-center shadow-sm cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"><span class="w-4 text-center text-sm">${t.icon}</span> <span class="ml-1 truncate">${t.text}</span></span>`).join('');
 }
 
 function updateWardrobeAssistant(weather, todayIdx) {
@@ -370,7 +371,8 @@ function updateCarWashIndex(weather, todayIdx) {
     const cardWash = iconWash.closest('.glass-card');
     
     iconWash.className = 'fa-solid fa-car-side text-2xl transition-colors duration-500';
-    cardWash.className = 'glass-card bg-white/30 dark:bg-slate-800/40 rounded-2xl p-5 border-l-4 transition-colors duration-500 shadow-md border-t border-r border-b border-white/40 dark:border-white/5';
+    // Aplicat dark:border-slate-600 peste tot (excepție stânga care e dictată mai jos)
+    cardWash.className = 'glass-card bg-white/40 dark:bg-slate-800/40 rounded-2xl p-5 border-l-4 transition-colors duration-500 shadow-md border-t border-r border-b border-slate-300 dark:border-slate-600';
 
     if (probToday > 20 || probTmrw > 20) {
         iconWash.classList.add('text-rose-500'); cardWash.classList.add('border-l-rose-500');
@@ -395,8 +397,10 @@ function renderHourlyForecast(weather) {
         const hourStr = timeObj.getHours().toString().padStart(2, '0') + ':00';
         const temp = formatTemp(weather.hourly.temperature_2m[i]);
         const hCodeInfo = WMO_CODES[weather.hourly.weather_code[i]] || { icon: 'fa-circle-question', color: 'text-slate-500' };
+        
+        // Adăugat dark:border-slate-700 la elementele prognozei pe ore
         hourlyContainer.innerHTML += `
-            <div class="bg-white/60 dark:bg-slate-900/30 rounded-xl p-3 min-w-[65px] flex flex-col items-center justify-center space-y-2 border border-slate-200/50 dark:border-white/5 shadow-sm hover:bg-white/80 dark:hover:bg-slate-800/60 transition cursor-default">
+            <div class="bg-white/60 dark:bg-slate-900/30 rounded-xl p-3 min-w-[65px] flex flex-col items-center justify-center space-y-2 border border-slate-300 dark:border-slate-700 shadow-sm hover:bg-white/80 dark:hover:bg-slate-800/60 transition cursor-default">
                 <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">${hourStr}</div>
                 <i class="fa-solid ${hCodeInfo.icon} ${hCodeInfo.color} drop-shadow-md text-xl"></i>
                 <div class="font-bold text-sm text-slate-800 dark:text-white">${temp}°</div>
@@ -430,9 +434,10 @@ function renderDailyForecast(weather, todayIdx) {
             else if(uvMax < 11) uvColorDrop = 'text-rose-600 dark:text-rose-500';
             else uvColorDrop = 'text-purple-600 dark:text-purple-500';
         }
-
+        
+        // Adăugat dark:border-slate-600 la container și dark:border-slate-700 la secțiunea extinsă
         dailyContainer.innerHTML += `
-            <div class="bg-white/40 dark:bg-slate-900/20 rounded-xl border border-slate-200/50 dark:border-white/5 overflow-hidden transition-all duration-300">
+            <div class="bg-white/40 dark:bg-slate-900/20 rounded-xl border border-slate-300 dark:border-slate-600 overflow-hidden transition-all duration-300">
                 <div class="flex items-center justify-between text-sm p-3 hover:bg-white/60 dark:hover:bg-slate-800/40 cursor-pointer transition" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')">
                     <div class="w-16 font-semibold ${isToday ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'} flex items-center">
                         ${dayName} <i class="fa-solid fa-chevron-down text-[9px] ml-1.5 text-slate-400 dark:text-slate-500 chevron transition-transform duration-300"></i>
@@ -441,7 +446,7 @@ function renderDailyForecast(weather, todayIdx) {
                     <div class="w-14 text-center text-[10px] text-blue-600 dark:text-blue-300 bg-blue-100/50 dark:bg-blue-900/20 rounded-md py-0.5 font-medium"><i class="fa-solid fa-droplet text-[9px] mr-1 text-blue-500 dark:text-blue-400"></i>${precipProb}%</div>
                     <div class="w-24 text-right font-bold text-slate-800 dark:text-white">${maxTemp}° <span class="text-slate-500 font-medium ml-1">/ ${minTemp}°</span></div>
                 </div>
-                <div class="hidden bg-slate-100/50 dark:bg-slate-800/30 px-4 pb-3 pt-2 border-t border-slate-200/50 dark:border-white/5">
+                <div class="hidden bg-slate-100/50 dark:bg-slate-800/30 px-4 pb-3 pt-2 border-t border-slate-300 dark:border-slate-700">
                     <div class="grid grid-cols-2 gap-3 text-[10px] text-slate-600 dark:text-slate-300 font-medium">
                         <div class="flex items-center"><i class="fa-solid fa-wind w-4 text-cyan-500 dark:text-cyan-400 drop-shadow-[0_0_2px_rgba(34,211,238,0.4)]"></i> Rafale: ${windMax} km/h</div>
                         <div class="flex items-center"><i class="fa-solid fa-glasses w-4 ${uvColorDrop} drop-shadow-[0_0_2px_currentColor]"></i> UV Max: ${uvMax}</div>
@@ -672,8 +677,9 @@ async function openTrainModal() {
             const h = Math.floor(durationHrs);
             const m = Math.round((durationHrs - h) * 60);
 
+            // Adăugat dark:border-slate-600 pe rutele de tren
             html += `
-                <div class="bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-white/5 hover:border-sky-400 dark:hover:border-sky-500/50 transition cursor-pointer flex justify-between items-center" 
+                <div class="bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition cursor-pointer flex justify-between items-center" 
                      onclick="selectCfrTrain('${tr.type}', '${dep.toISOString()}', ${durationHrs}, '${destNameClean}')">
                     <div>
                         <div class="${tr.color} font-bold text-sm mb-1"><i class="fa-solid fa-train mr-1"></i> ${tr.type}</div>
@@ -683,8 +689,8 @@ async function openTrainModal() {
                         </div>
                     </div>
                     <div class="text-right">
-                        <div class="text-[9px] text-slate-400 uppercase">Durată</div>
-                        <div class="text-xs font-bold text-white bg-slate-400 dark:bg-slate-800 px-2 py-1 rounded">${h}h ${m}m</div>
+                        <div class="text-[9px] text-slate-500 dark:text-slate-400 uppercase">Durată</div>
+                        <div class="text-xs font-bold text-slate-800 dark:text-white bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">${h}h ${m}m</div>
                     </div>
                 </div>
             `;
