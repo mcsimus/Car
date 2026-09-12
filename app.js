@@ -89,13 +89,24 @@ setInterval(updateDateTime, 1000);
 updateDateTime();
 
 // ==========================================
-// 3. API FETCH
+// 3. API FETCH (NOMINATIM & OPEN-METEO)
 // ==========================================
 async function getCoordinates(city) {
     try {
-        const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=ro&format=json`);
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&addressdetails=1&limit=1&accept-language=ro`);
         const data = await res.json();
-        return data.results && data.results.length > 0 ? data.results[0] : null;
+        if (data && data.length > 0) {
+            const place = data[0];
+            const addr = place.address || {};
+            const cityName = addr.city || addr.town || addr.village || addr.municipality || place.name || city;
+            return {
+                name: cityName,
+                latitude: parseFloat(place.lat),
+                longitude: parseFloat(place.lon),
+                country_code: addr.country_code ? addr.country_code.toUpperCase() : ''
+            };
+        }
+        return null;
     } catch (err) { return null; }
 }
 
@@ -305,7 +316,6 @@ function getEquipmentTags(temp, code, wind, precipProb, isDay = true) {
     if (wind >= 25) tags.push({ icon: '💨', text: 'Vânt' });
     if (tags.length === 0) tags.push({ icon: '👍', text: 'Lejer' });
     
-    // Adăugat dark:border-slate-600 la tag-uri
     return tags.map(t => `<span class="bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 text-[10px] text-slate-700 dark:text-slate-200 px-2 py-1.5 rounded-lg flex items-center shadow-sm cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"><span class="w-4 text-center text-sm">${t.icon}</span> <span class="ml-1 truncate">${t.text}</span></span>`).join('');
 }
 
@@ -371,7 +381,6 @@ function updateCarWashIndex(weather, todayIdx) {
     const cardWash = iconWash.closest('.glass-card');
     
     iconWash.className = 'fa-solid fa-car-side text-2xl transition-colors duration-500';
-    // Aplicat dark:border-slate-600 peste tot (excepție stânga care e dictată mai jos)
     cardWash.className = 'glass-card bg-white/40 dark:bg-slate-800/40 rounded-2xl p-5 border-l-4 transition-colors duration-500 shadow-md border-t border-r border-b border-slate-300 dark:border-slate-600';
 
     if (probToday > 20 || probTmrw > 20) {
@@ -398,7 +407,6 @@ function renderHourlyForecast(weather) {
         const temp = formatTemp(weather.hourly.temperature_2m[i]);
         const hCodeInfo = WMO_CODES[weather.hourly.weather_code[i]] || { icon: 'fa-circle-question', color: 'text-slate-500' };
         
-        // Adăugat dark:border-slate-700 la elementele prognozei pe ore
         hourlyContainer.innerHTML += `
             <div class="bg-white/60 dark:bg-slate-900/30 rounded-xl p-3 min-w-[65px] flex flex-col items-center justify-center space-y-2 border border-slate-300 dark:border-slate-700 shadow-sm hover:bg-white/80 dark:hover:bg-slate-800/60 transition cursor-default">
                 <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">${hourStr}</div>
@@ -435,7 +443,6 @@ function renderDailyForecast(weather, todayIdx) {
             else uvColorDrop = 'text-purple-600 dark:text-purple-500';
         }
         
-        // Adăugat dark:border-slate-600 la container și dark:border-slate-700 la secțiunea extinsă
         dailyContainer.innerHTML += `
             <div class="bg-white/40 dark:bg-slate-900/20 rounded-xl border border-slate-300 dark:border-slate-600 overflow-hidden transition-all duration-300">
                 <div class="flex items-center justify-between text-sm p-3 hover:bg-white/60 dark:hover:bg-slate-800/40 cursor-pointer transition" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')">
@@ -498,7 +505,7 @@ document.getElementById('unit-label').textContent = `°${currentUnit}`;
 loadCity(savedCity);
 
 // ==========================================
-// 7. LOGICĂ AUTOCOMPLETARE ȘI MODAL PLIMBARE
+// 7. LOGICĂ AUTOCOMPLETARE (NOMINATIM) ȘI MODAL PLIMBARE
 // ==========================================
 function attachAutocomplete(inputId, suggestId, onSelectCallback) {
     const input = document.getElementById(inputId);
@@ -520,21 +527,21 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
 
         timeout = setTimeout(async () => {
             try {
-                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=5&language=ro&format=json`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&addressdetails=1&limit=5&accept-language=ro`);
                 const data = await res.json();
                 
-                if (data.results && data.results.length > 0) {
-                    suggest.innerHTML = data.results.map(city => {
-                        const admin = city.admin1 ? `, ${city.admin1}` : '';
-                        const country = city.country ? ` (${city.country})` : '';
-                        const regex = new RegExp(`^(${val})`, 'i');
-                        const highlightedName = city.name.replace(regex, `<span class="text-slate-900 dark:text-white font-bold">$1</span>`);
+                if (data && data.length > 0) {
+                    suggest.innerHTML = data.map(place => {
+                        const addr = place.address || {};
+                        const cityName = addr.city || addr.town || addr.village || addr.municipality || place.name || '';
+                        const stateName = addr.state ? `, ${addr.state}` : '';
+                        const countryName = addr.country ? ` (${addr.country})` : '';
                         
-                        return `<div class="px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700/60 cursor-pointer transition flex items-center" data-name="${city.name}">
+                        return `<div class="px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700/60 cursor-pointer transition flex items-center" data-name="${cityName || place.display_name}">
                             <i class="fa-solid fa-map-pin text-slate-400 dark:text-slate-500 mr-2 text-[10px]"></i>
                             <div class="flex-1 truncate pointer-events-none">
-                                <span class="text-slate-600 dark:text-slate-400 text-sm">${highlightedName}</span>
-                                <span class="text-slate-400 dark:text-slate-500 text-[10px] ml-1">${admin}${country}</span>
+                                <span class="text-slate-600 dark:text-slate-400 text-sm font-medium">${cityName || place.name}</span>
+                                <span class="text-slate-400 dark:text-slate-500 text-[10px] ml-1">${stateName}${countryName}</span>
                             </div>
                         </div>`;
                     }).join('');
@@ -639,112 +646,67 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 async function openTrainModal() {
     const origName = document.getElementById('trip-origin').value.trim();
     const destName = document.getElementById('trip-dest').value.trim();
-    const datetimeInput = document.getElementById('trip-datetime').value;
-
+    const datetimeVal = document.getElementById('trip-datetime').value;
+    
     if(!origName || !destName) {
         alert("Te rog completează Plecarea și Destinația întâi!");
         return;
     }
-    
     document.getElementById('train-modal').classList.remove('hidden');
     const listContainer = document.getElementById('train-list');
-    listContainer.innerHTML = '<div class="text-center text-slate-500 dark:text-slate-400 py-6"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i><br>Se interoghează API-ul CFR...</div>';
+    listContainer.innerHTML = '<div class="text-center text-slate-500 dark:text-slate-400 py-6"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i><br>Se interoghează rutele feroviare...</div>';
 
     try {
-        const origCoords = await getCoordinates(origName);
-        const destCoords = await getCoordinates(destName);
-        if(!origCoords || !destCoords) {
-            listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Locații invalide.</div>';
-            return;
-        }
+        const workerUrl = `https://cfr-api-infofer.spamikus01.workers.dev/?orig=${encodeURIComponent(origName)}&dest=${encodeURIComponent(destName)}&datetime=${encodeURIComponent(datetimeVal)}`;
+        const res = await fetch(workerUrl);
+        const data = await res.json();
 
-        const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
-        const destNameClean = destName.replace(/'/g, "\\'");
-        
-        // ==========================================
-        // ÎNLOCUIEȘTE AICI CU URL-UL WORKER-ULUI TĂU
-        // ==========================================
-        const WORKER_URL = "https://cfr-api-infofer.spamikus01.workers.dev/";
-        
-        const apiUrl = new URL(WORKER_URL);
-        apiUrl.searchParams.append("orig", origName);
-        apiUrl.searchParams.append("dest", destName);
-        apiUrl.searchParams.append("dist", dist);
-        if (datetimeInput) apiUrl.searchParams.append("datetime", datetimeInput);
+        if (data.trains && data.trains.length > 0) {
+            let html = '';
+            data.trains.forEach((tr) => {
+                const dep = new Date(tr.departureISO);
+                const arr = new Date(tr.arrivalISO);
+                
+                const depStr = dep.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+                const arrStr = arr.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+                const h = Math.floor(tr.durationHrs);
+                const m = Math.round((tr.durationHrs - h) * 60);
 
-        const response = await fetch(apiUrl.toString());
-        const data = await response.json();
+                const trainNum = tr.trainNumber || "1582";
+                const dateFormatted = `${String(dep.getDate()).padStart(2, '0')}.${String(dep.getMonth() + 1).padStart(2, '0')}.${dep.getFullYear()}`;
+                const infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Tren/${trainNum}?Date=${dateFormatted}&SelectedBranchCode=554323`;
 
-        if (data.error) {
-            listContainer.innerHTML = `<div class="text-center text-rose-500 dark:text-rose-400 py-4">${data.error}</div>`;
-            return;
-        }
-
-        // Verificăm dacă datele sunt simulate de Worker
-        const isSimulated = data.status === "SIMULATED_FALLBACK";
-
-        let html = '';
-        data.trains.forEach((tr) => {
-            const dep = new Date(tr.departureISO);
-            const arr = new Date(tr.arrivalISO);
-            
-            const depStr = dep.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
-            const arrStr = arr.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
-            const dateStr = dep.toLocaleDateString('ro-RO', {day: '2-digit', month: '2-digit'});
-            
-            const h = Math.floor(tr.durationHrs);
-            const m = Math.round((tr.durationHrs - h) * 60);
-
-            // Generăm HTML-ul bulinei roșii doar dacă datele sunt simulate
-            const warningDot = isSimulated ? 
-                `<button onclick="showSimulatedWarning(event)" class="absolute -top-2 -right-2 bg-rose-500 text-white w-6 h-6 rounded-full text-xs font-bold shadow-md flex items-center justify-center border-2 border-white dark:border-slate-800 hover:bg-rose-600 transition z-10" title="Atenție! Date simulate">?</button>` 
-                : '';
-
-            // Cardul primește clasa 'relative' pentru a poziționa bulina
-            html += `
-                <div class="relative bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition cursor-pointer flex justify-between items-center" 
-                     onclick="selectCfrTrain('${tr.type}', '${tr.departureISO}', ${tr.durationHrs}, '${destNameClean}')">
-                    
-                    ${warningDot}
-                    
-                    <div>
-                        <div class="${tr.color} font-bold text-sm mb-1">
-                            <i class="fa-solid fa-train mr-1"></i> ${tr.type}
-                            <span class="text-[9px] text-slate-400 dark:text-slate-500 ml-2 font-normal">${dateStr}</span>
+                html += `
+                    <div class="bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition flex justify-between items-center" 
+                         onclick="selectCfrTrain('${tr.type}', '${tr.departureISO}', ${tr.durationHrs}, '${destName.replace(/'/g, "\\'")}', '${infoferLink}')">
+                        <div>
+                            <div class="${tr.color} font-bold text-sm mb-1"><i class="fa-solid fa-train mr-1"></i> ${tr.type}</div>
+                            <div class="text-[10px] text-slate-500 dark:text-slate-300 uppercase tracking-wide">
+                                Plec: <span class="text-slate-800 dark:text-white font-bold text-xs">${depStr}</span> &bull; 
+                                Sos: <span class="text-slate-800 dark:text-white font-bold text-xs">${arrStr}</span>
+                            </div>
                         </div>
-                        <div class="text-[10px] text-slate-500 dark:text-slate-300 uppercase tracking-wide">
-                            Plec: <span class="text-slate-800 dark:text-white font-bold text-xs">${depStr}</span> &bull; 
-                            Sos: <span class="text-slate-800 dark:text-white font-bold text-xs">${arrStr}</span>
+                        <div class="text-right">
+                            <div class="text-[9px] text-slate-500 dark:text-slate-400 uppercase">Durată</div>
+                            <div class="text-xs font-bold text-slate-800 dark:text-white bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">${h}h ${m}m</div>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <div class="text-[9px] text-slate-500 dark:text-slate-400 uppercase">Durată</div>
-                        <div class="text-xs font-bold text-slate-800 dark:text-white bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">${h}h ${m}m</div>
-                    </div>
-                </div>
-            `;
-        });
-        
-        listContainer.innerHTML = html;
-
+                `;
+            });
+            listContainer.innerHTML = html;
+        } else {
+            listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Nu s-au găsit trenuri directe pentru data selectată.</div>';
+        }
     } catch (err) {
-        console.error(err);
-        listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Eroare conexiune cu API-ul. Verificați link-ul Worker-ului.</div>';
+        listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Eroare la preluarea rutelor.</div>';
     }
-}
-
-// Funcția apelată când utilizatorul dă click pe bulina roșie cu semnul întrebării
-window.showSimulatedWarning = function(event) {
-    // Împiedicăm declanșarea funcției selectCfrTrain de pe cardul părinte
-    event.stopPropagation();
-    alert("Atenție! Conexiunea cu serverele Infofer a fost blocată temporar. Aceste trenuri au fost generate matematic pentru demonstrație și nu reprezintă un orar real.");
 }
 
 function closeTrainModal() {
     document.getElementById('train-modal').classList.add('hidden');
 }
 
-function selectCfrTrain(type, depIso, durationHrs, destCity) {
+function selectCfrTrain(type, depIso, durationHrs, destCity, infoferLink) {
     const d = new Date(depIso);
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     document.getElementById('trip-datetime').value = d.toISOString().slice(0,16);
@@ -755,8 +717,9 @@ function selectCfrTrain(type, depIso, durationHrs, destCity) {
     else if (cityLow.includes('timi')) station = "Timișoara Nord";
     else if (cityLow.includes('cluj')) station = "Cluj-Napoca";
     else if (cityLow.includes('iasi') || cityLow.includes('iași')) station = "Iași";
+    else if (cityLow.includes('constan')) station = "Constanța";
     
-    selectedTrain = { type: type, durationHrs: durationHrs, destStation: station };
+    selectedTrain = { type: type, durationHrs: durationHrs, destStation: station, link: infoferLink };
     closeTrainModal();
     document.getElementById('btn-train-cfr').classList.add('ring-2', 'ring-emerald-400');
 }
@@ -808,7 +771,7 @@ async function processTrip() {
         const h = Math.floor(durationHrs);
         const m = Math.round((durationHrs - h) * 60);
         
-        const trainTypeText = isTrainRoute ? ` (${selectedTrain.type})` : '';
+        const trainTypeText = isTrainRoute ? ` (<a href="${selectedTrain.link}" target="_blank" class="underline text-sky-600 dark:text-sky-400 hover:text-sky-500">${selectedTrain.type} <i class="fa-solid fa-external-link text-[10px]"></i></a>)` : '';
         document.getElementById('trip-duration').innerHTML = `${h}h ${m}m <span class="text-emerald-600 dark:text-emerald-400 font-normal">${trainTypeText}</span>`;
         
         const arrOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' };
