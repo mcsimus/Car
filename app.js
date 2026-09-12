@@ -1,48 +1,78 @@
 // ==========================================
-// 1. STARE GLOBALĂ ȘI CONSTANTE
+// 1. STARE GLOBALĂ ȘI TEMĂ
 // ==========================================
 let currentUnit = localStorage.getItem('tempUnit') || 'C';
+let currentTheme = localStorage.getItem('appTheme') || 'auto'; // 'light', 'dark', 'auto'
 let lastWeatherData = null;
 let lastLocName = '';
 let lastCountry = '';
 
-// Dicționarul de coduri meteo WMO
+// Sistem Temă
+function applyTheme() {
+    const html = document.documentElement;
+    const isDark = currentTheme === 'dark' || (currentTheme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    
+    if (isDark) html.classList.add('dark');
+    else html.classList.remove('dark');
+
+    const btnIcon = document.getElementById('theme-icon');
+    if(btnIcon) {
+        if(currentTheme === 'light') btnIcon.className = 'fa-solid fa-sun text-amber-500 drop-shadow-md transition-transform duration-300';
+        else if(currentTheme === 'dark') btnIcon.className = 'fa-solid fa-moon text-blue-400 drop-shadow-md transition-transform duration-300';
+        else btnIcon.className = 'fa-solid fa-circle-half-stroke text-slate-500 dark:text-slate-400 drop-shadow-md transition-transform duration-300';
+    }
+}
+
+function cycleTheme() {
+    if(currentTheme === 'auto') currentTheme = 'light';
+    else if(currentTheme === 'light') currentTheme = 'dark';
+    else currentTheme = 'auto';
+    
+    localStorage.setItem('appTheme', currentTheme);
+    applyTheme();
+}
+
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if(currentTheme === 'auto') applyTheme();
+});
+applyTheme();
+
+// ==========================================
+// 2. WMO CODES & UTILITARE
+// ==========================================
 const WMO_CODES = {
     0: { desc: 'Cer senin', icon: 'fa-sun', color: 'text-yellow-400' },
-    1: { desc: 'Preponderent senin', icon: 'fa-sun', color: 'text-yellow-300' },
-    2: { desc: 'Parțial înnorat', icon: 'fa-cloud-sun', color: 'text-sky-200' },
-    3: { desc: 'Înnorat', icon: 'fa-cloud', color: 'text-white' },
-    45: { desc: 'Ceață', icon: 'fa-smog', color: 'text-slate-300' },
-    48: { desc: 'Ceață înghețată', icon: 'fa-smog', color: 'text-slate-300' },
-    51: { desc: 'Burniță ușoară', icon: 'fa-cloud-rain', color: 'text-blue-300' },
-    53: { desc: 'Burniță moderată', icon: 'fa-cloud-rain', color: 'text-blue-400' },
-    55: { desc: 'Burniță densă', icon: 'fa-cloud-rain', color: 'text-blue-500' },
-    56: { desc: 'Burniță înghețată', icon: 'fa-cloud-rain', color: 'text-cyan-300' },
-    57: { desc: 'Burniță densă', icon: 'fa-cloud-rain', color: 'text-cyan-400' },
+    1: { desc: 'Preponderent senin', icon: 'fa-sun', color: 'text-yellow-400' },
+    2: { desc: 'Parțial înnorat', icon: 'fa-cloud-sun', color: 'text-sky-300 dark:text-sky-200' },
+    3: { desc: 'Înnorat', icon: 'fa-cloud', color: 'text-slate-400 dark:text-white' },
+    45: { desc: 'Ceață', icon: 'fa-smog', color: 'text-slate-400 dark:text-slate-300' },
+    48: { desc: 'Ceață înghețată', icon: 'fa-smog', color: 'text-slate-400 dark:text-slate-300' },
+    51: { desc: 'Burniță ușoară', icon: 'fa-cloud-rain', color: 'text-blue-400 dark:text-blue-300' },
+    53: { desc: 'Burniță moderată', icon: 'fa-cloud-rain', color: 'text-blue-500 dark:text-blue-400' },
+    55: { desc: 'Burniță densă', icon: 'fa-cloud-rain', color: 'text-blue-600 dark:text-blue-500' },
+    56: { desc: 'Burniță înghețată', icon: 'fa-cloud-rain', color: 'text-cyan-400 dark:text-cyan-300' },
+    57: { desc: 'Burniță densă', icon: 'fa-cloud-rain', color: 'text-cyan-500 dark:text-cyan-400' },
     61: { desc: 'Ploaie ușoară', icon: 'fa-cloud-rain', color: 'text-blue-400' },
     63: { desc: 'Ploaie moderată', icon: 'fa-cloud-rain', color: 'text-blue-500' },
-    65: { desc: 'Ploaie puternică', icon: 'fa-cloud-showers-heavy', color: 'text-indigo-400' },
-    66: { desc: 'Ploaie înghețată', icon: 'fa-cloud-rain', color: 'text-cyan-400' },
-    67: { desc: 'Ploaie puternică', icon: 'fa-cloud-showers-heavy', color: 'text-cyan-500' },
-    71: { desc: 'Ninsoare ușoară', icon: 'fa-snowflake', color: 'text-indigo-200' },
-    73: { desc: 'Ninsoare moderată', icon: 'fa-snowflake', color: 'text-indigo-300' },
-    75: { desc: 'Ninsoare puternică', icon: 'fa-snowflake', color: 'text-indigo-400' },
-    77: { desc: 'Grindină fină', icon: 'fa-snowflake', color: 'text-indigo-200' },
+    65: { desc: 'Ploaie puternică', icon: 'fa-cloud-showers-heavy', color: 'text-indigo-500 dark:text-indigo-400' },
+    66: { desc: 'Ploaie înghețată', icon: 'fa-cloud-rain', color: 'text-cyan-500 dark:text-cyan-400' },
+    67: { desc: 'Ploaie puternică', icon: 'fa-cloud-showers-heavy', color: 'text-cyan-600 dark:text-cyan-500' },
+    71: { desc: 'Ninsoare ușoară', icon: 'fa-snowflake', color: 'text-indigo-300 dark:text-indigo-200' },
+    73: { desc: 'Ninsoare moderată', icon: 'fa-snowflake', color: 'text-indigo-400 dark:text-indigo-300' },
+    75: { desc: 'Ninsoare puternică', icon: 'fa-snowflake', color: 'text-indigo-500 dark:text-indigo-400' },
+    77: { desc: 'Grindină fină', icon: 'fa-snowflake', color: 'text-indigo-300 dark:text-indigo-200' },
     80: { desc: 'Averse ușoare', icon: 'fa-cloud-rain', color: 'text-blue-400' },
     81: { desc: 'Averse moderate', icon: 'fa-cloud-showers-heavy', color: 'text-blue-500' },
     82: { desc: 'Averse violente', icon: 'fa-cloud-showers-heavy', color: 'text-indigo-500' },
-    85: { desc: 'Averse ninsoare', icon: 'fa-snowflake', color: 'text-indigo-200' },
-    86: { desc: 'Averse ninsoare', icon: 'fa-snowflake', color: 'text-indigo-300' },
-    95: { desc: 'Furtună', icon: 'fa-cloud-bolt', color: 'text-purple-400' },
-    96: { desc: 'Furtună grindină', icon: 'fa-cloud-bolt', color: 'text-purple-500' },
-    99: { desc: 'Furtună severă', icon: 'fa-cloud-bolt', color: 'text-purple-600' }
+    85: { desc: 'Averse ninsoare', icon: 'fa-snowflake', color: 'text-indigo-300 dark:text-indigo-200' },
+    86: { desc: 'Averse ninsoare', icon: 'fa-snowflake', color: 'text-indigo-400 dark:text-indigo-300' },
+    95: { desc: 'Furtună', icon: 'fa-cloud-bolt', color: 'text-purple-500 dark:text-purple-400' },
+    96: { desc: 'Furtună grindină', icon: 'fa-cloud-bolt', color: 'text-purple-600 dark:text-purple-500' },
+    99: { desc: 'Furtună severă', icon: 'fa-cloud-bolt', color: 'text-purple-700 dark:text-purple-600' }
 };
 
 const daysRO = ['Dum.', 'Lun.', 'Mar.', 'Mie.', 'Joi', 'Vin.', 'Sâm.'];
 
-// ==========================================
-// 2. FUNCȚII UTILITARE
-// ==========================================
 function formatTemp(tempC) { 
     return currentUnit === 'F' ? Math.round((tempC * 9/5) + 32) : Math.round(tempC); 
 }
@@ -98,14 +128,14 @@ async function getFullData(lat, lon) {
 async function loadCity(city) {
     const location = await getCoordinates(city);
     if(location) {
-        localStorage.setItem('lastCity', location.name); // Salvare oraș pentru sesiuni viitoare
+        localStorage.setItem('lastCity', location.name);
         const fullData = await getFullData(location.latitude, location.longitude);
         updateUI(fullData, location.name, location.country_code);
     } else { alert("Orașul nu a fost găsit."); }
 }
 
 // ==========================================
-// 4. FUNCȚIA DISPECER UI (REFACTORIZATĂ)
+// 4. FUNCȚIA DISPECER UI
 // ==========================================
 function updateUI(fullData, locationName, country) {
     lastWeatherData = fullData;
@@ -115,12 +145,10 @@ function updateUI(fullData, locationName, country) {
     const weather = fullData.weather;
     if(!weather) return;
 
-    // Calculăm indexul zilei de azi (Open-Meteo returnează și date din trecut)
     const todayStr = weather.current.time.split('T')[0];
     let todayIdx = weather.daily.time.indexOf(todayStr);
     if(todayIdx === -1) todayIdx = 3;
 
-    // Actualizăm fiecare modul separat
     updateHeaderInfo(locationName, country);
     updateCurrentWeather(weather);
     renderWeatherAnimations(weather.current.weather_code);
@@ -181,7 +209,7 @@ function renderWeatherAnimations(code) {
     if([71,73,75,77,85,86].includes(code)) {
         for(let i=0; i<25; i++) {
             const flake = document.createElement('div');
-            flake.className = 'snow-anim';
+            flake.className = 'snow-anim bg-white/70';
             flake.style.left = `${Math.random() * 100}vw`;
             flake.style.animationDuration = `${Math.random() * 3 + 2}s`;
             flake.style.animationDelay = `${Math.random() * 2}s`;
@@ -203,12 +231,12 @@ function updateAQI(aqiData) {
     document.getElementById('aqi-pm25').textContent = aqiData.current.pm2_5.toFixed(1);
     document.getElementById('aqi-pm10').textContent = aqiData.current.pm10.toFixed(1);
     
-    let color = 'text-emerald-400'; 
+    let color = 'text-emerald-500 dark:text-emerald-400'; 
     let icon = '<i class="fa-solid fa-thumbs-up"></i>';
-    if(aqi > 20) { color = 'text-yellow-400'; icon = '<i class="fa-solid fa-thumbs-up"></i>'; }
-    if(aqi > 40) { color = 'text-orange-400'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
-    if(aqi > 60) { color = 'text-rose-500'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
-    if(aqi > 80) { color = 'text-purple-500'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
+    if(aqi > 20) { color = 'text-yellow-500 dark:text-yellow-400'; icon = '<i class="fa-solid fa-thumbs-up"></i>'; }
+    if(aqi > 40) { color = 'text-orange-500 dark:text-orange-400'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
+    if(aqi > 60) { color = 'text-rose-600 dark:text-rose-500'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
+    if(aqi > 80) { color = 'text-purple-600 dark:text-purple-500'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
     
     descEl.innerHTML = icon;
     descEl.className = `text-xl ${color} drop-shadow-md transition-colors duration-300`;
@@ -257,10 +285,10 @@ function drawPressureChart(weather, todayIdx) {
         const x = (idx / (pData.length - 1)) * 100;
         const y = 40 - ((val - minP) / (maxP - minP)) * 36 - 2;
         const isToday = idx === 3;
-        dots += `<circle cx="${x}" cy="${y}" r="${isToday ? 2.5 : 1.5}" fill="${isToday ? '#38bdf8' : '#e2e8f0'}" class="drop-shadow-md" />`;
+        dots += `<circle cx="${x}" cy="${y}" r="${isToday ? 2.5 : 1.5}" fill="${isToday ? '#0ea5e9' : '#94a3b8'}" class="drop-shadow-sm" />`;
     });
     svg.innerHTML = polyline + dots;
-    document.getElementById('pressure-labels').innerHTML = labels.map((l, i) => `<div class="${i === 3 ? 'text-emerald-400 font-bold scale-110' : ''}">${l}</div>`).join('');
+    document.getElementById('pressure-labels').innerHTML = labels.map((l, i) => `<div class="${i === 3 ? 'text-emerald-500 dark:text-emerald-400 font-bold scale-110' : ''}">${l}</div>`).join('');
 }
 
 function getEquipmentTags(temp, code, wind, precipProb, isDay = true) {
@@ -277,20 +305,20 @@ function getEquipmentTags(temp, code, wind, precipProb, isDay = true) {
     if (wind >= 25) tags.push({ icon: '💨', text: 'Vânt' });
     if (tags.length === 0) tags.push({ icon: '👍', text: 'Lejer' });
     
-    return tags.map(t => `<span class="bg-slate-800/80 border border-white/5 text-[10px] text-slate-200 px-2 py-1.5 rounded-lg flex items-center shadow-sm cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"><span class="w-4 text-center text-sm">${t.icon}</span> <span class="ml-1 truncate">${t.text}</span></span>`).join('');
+    return tags.map(t => `<span class="bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-white/5 text-[10px] text-slate-700 dark:text-slate-200 px-2 py-1.5 rounded-lg flex items-center shadow-sm cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"><span class="w-4 text-center text-sm">${t.icon}</span> <span class="ml-1 truncate">${t.text}</span></span>`).join('');
 }
 
 function updateWardrobeAssistant(weather, todayIdx) {
     const uvVal = weather.daily.uv_index_max[todayIdx];
     document.getElementById('uv-val').textContent = uvVal.toFixed(1);
     let uvEl = document.getElementById('uv-desc');
-    let uvColor = 'text-emerald-400';
+    let uvColor = 'text-emerald-500 dark:text-emerald-400';
     
     if(uvVal < 3) { uvEl.textContent = 'Scăzut'; }
-    else if(uvVal < 6) { uvEl.textContent = 'Moderat'; uvColor = 'text-yellow-400'; }
-    else if(uvVal < 8) { uvEl.textContent = 'Ridicat'; uvColor = 'text-orange-400'; }
-    else if(uvVal < 11) { uvEl.textContent = 'F. Ridicat'; uvColor = 'text-rose-500'; }
-    else { uvEl.textContent = 'Extrem'; uvColor = 'text-purple-500'; }
+    else if(uvVal < 6) { uvEl.textContent = 'Moderat'; uvColor = 'text-yellow-500 dark:text-yellow-400'; }
+    else if(uvVal < 8) { uvEl.textContent = 'Ridicat'; uvColor = 'text-orange-500 dark:text-orange-400'; }
+    else if(uvVal < 11) { uvEl.textContent = 'F. Ridicat'; uvColor = 'text-rose-600 dark:text-rose-500'; }
+    else { uvEl.textContent = 'Extrem'; uvColor = 'text-purple-600 dark:text-purple-500'; }
     uvEl.className = `text-[10px] font-bold uppercase tracking-wide pb-0.5 ${uvColor}`;
 
     document.getElementById('sunrise-time').textContent = weather.daily.sunrise[todayIdx].split('T')[1];
@@ -342,7 +370,7 @@ function updateCarWashIndex(weather, todayIdx) {
     const cardWash = iconWash.closest('.glass-card');
     
     iconWash.className = 'fa-solid fa-car-side text-2xl transition-colors duration-500';
-    cardWash.className = 'glass-card rounded-2xl p-5 border-l-4 transition-colors duration-500 shadow-md border-t border-r border-b border-white/5';
+    cardWash.className = 'glass-card bg-white/30 dark:bg-slate-800/40 rounded-2xl p-5 border-l-4 transition-colors duration-500 shadow-md border-t border-r border-b border-white/40 dark:border-white/5';
 
     if (probToday > 20 || probTmrw > 20) {
         iconWash.classList.add('text-rose-500'); cardWash.classList.add('border-l-rose-500');
@@ -368,10 +396,10 @@ function renderHourlyForecast(weather) {
         const temp = formatTemp(weather.hourly.temperature_2m[i]);
         const hCodeInfo = WMO_CODES[weather.hourly.weather_code[i]] || { icon: 'fa-circle-question', color: 'text-slate-500' };
         hourlyContainer.innerHTML += `
-            <div class="bg-slate-900/30 rounded-xl p-3 min-w-[65px] flex flex-col items-center justify-center space-y-2 border border-white/5 shadow-sm hover:bg-slate-800/60 transition cursor-default">
-                <div class="text-[10px] text-slate-400 font-medium">${hourStr}</div>
+            <div class="bg-white/60 dark:bg-slate-900/30 rounded-xl p-3 min-w-[65px] flex flex-col items-center justify-center space-y-2 border border-slate-200/50 dark:border-white/5 shadow-sm hover:bg-white/80 dark:hover:bg-slate-800/60 transition cursor-default">
+                <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">${hourStr}</div>
                 <i class="fa-solid ${hCodeInfo.icon} ${hCodeInfo.color} drop-shadow-md text-xl"></i>
-                <div class="font-bold text-sm text-white">${temp}°</div>
+                <div class="font-bold text-sm text-slate-800 dark:text-white">${temp}°</div>
             </div>
         `;
     }
@@ -394,31 +422,31 @@ function renderDailyForecast(weather, todayIdx) {
         const sunriseTime = weather.daily.sunrise[i] ? weather.daily.sunrise[i].split('T')[1] : '--:--';
         const sunsetTime = weather.daily.sunset[i] ? weather.daily.sunset[i].split('T')[1] : '--:--';
 
-        let uvColorDrop = 'text-emerald-400';
+        let uvColorDrop = 'text-emerald-500 dark:text-emerald-400';
         if(uvMax !== '--') {
-            if(uvMax < 3) uvColorDrop = 'text-emerald-400';
-            else if(uvMax < 6) uvColorDrop = 'text-yellow-400';
-            else if(uvMax < 8) uvColorDrop = 'text-orange-400';
-            else if(uvMax < 11) uvColorDrop = 'text-rose-500';
-            else uvColorDrop = 'text-purple-500';
+            if(uvMax < 3) uvColorDrop = 'text-emerald-500 dark:text-emerald-400';
+            else if(uvMax < 6) uvColorDrop = 'text-yellow-500 dark:text-yellow-400';
+            else if(uvMax < 8) uvColorDrop = 'text-orange-500 dark:text-orange-400';
+            else if(uvMax < 11) uvColorDrop = 'text-rose-600 dark:text-rose-500';
+            else uvColorDrop = 'text-purple-600 dark:text-purple-500';
         }
 
         dailyContainer.innerHTML += `
-            <div class="bg-slate-900/20 rounded-xl border border-white/5 overflow-hidden transition-all duration-300">
-                <div class="flex items-center justify-between text-sm p-3 hover:bg-slate-800/40 cursor-pointer transition" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')">
-                    <div class="w-16 font-semibold ${isToday ? 'text-white' : 'text-slate-300'} flex items-center">
-                        ${dayName} <i class="fa-solid fa-chevron-down text-[9px] ml-1.5 text-slate-500 chevron transition-transform duration-300"></i>
+            <div class="bg-white/40 dark:bg-slate-900/20 rounded-xl border border-slate-200/50 dark:border-white/5 overflow-hidden transition-all duration-300">
+                <div class="flex items-center justify-between text-sm p-3 hover:bg-white/60 dark:hover:bg-slate-800/40 cursor-pointer transition" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')">
+                    <div class="w-16 font-semibold ${isToday ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'} flex items-center">
+                        ${dayName} <i class="fa-solid fa-chevron-down text-[9px] ml-1.5 text-slate-400 dark:text-slate-500 chevron transition-transform duration-300"></i>
                     </div>
                     <div class="w-8 flex justify-center"><i class="fa-solid ${dCodeInfo.icon} ${dCodeInfo.color} drop-shadow-md text-lg"></i></div>
-                    <div class="w-14 text-center text-[10px] text-blue-300 bg-blue-900/20 rounded-md py-0.5 font-medium"><i class="fa-solid fa-droplet text-[9px] mr-1 text-blue-400"></i>${precipProb}%</div>
-                    <div class="w-24 text-right font-bold text-white">${maxTemp}° <span class="text-slate-500 font-medium ml-1">/ ${minTemp}°</span></div>
+                    <div class="w-14 text-center text-[10px] text-blue-600 dark:text-blue-300 bg-blue-100/50 dark:bg-blue-900/20 rounded-md py-0.5 font-medium"><i class="fa-solid fa-droplet text-[9px] mr-1 text-blue-500 dark:text-blue-400"></i>${precipProb}%</div>
+                    <div class="w-24 text-right font-bold text-slate-800 dark:text-white">${maxTemp}° <span class="text-slate-500 font-medium ml-1">/ ${minTemp}°</span></div>
                 </div>
-                <div class="hidden bg-slate-800/30 px-4 pb-3 pt-2 border-t border-white/5">
-                    <div class="grid grid-cols-2 gap-3 text-[10px] text-slate-300 font-medium">
-                        <div class="flex items-center"><i class="fa-solid fa-wind w-4 text-cyan-400 drop-shadow-[0_0_2px_rgba(34,211,238,0.4)]"></i> Rafale: ${windMax} km/h</div>
+                <div class="hidden bg-slate-100/50 dark:bg-slate-800/30 px-4 pb-3 pt-2 border-t border-slate-200/50 dark:border-white/5">
+                    <div class="grid grid-cols-2 gap-3 text-[10px] text-slate-600 dark:text-slate-300 font-medium">
+                        <div class="flex items-center"><i class="fa-solid fa-wind w-4 text-cyan-500 dark:text-cyan-400 drop-shadow-[0_0_2px_rgba(34,211,238,0.4)]"></i> Rafale: ${windMax} km/h</div>
                         <div class="flex items-center"><i class="fa-solid fa-glasses w-4 ${uvColorDrop} drop-shadow-[0_0_2px_currentColor]"></i> UV Max: ${uvMax}</div>
-                        <div class="flex items-center"><i class="fa-solid fa-sun w-4 text-amber-400 drop-shadow-[0_0_2px_rgba(251,191,36,0.4)]"></i> Răsărit: ${sunriseTime}</div>
-                        <div class="flex items-center"><i class="fa-solid fa-moon w-4 text-indigo-400 drop-shadow-[0_0_2px_rgba(129,140,248,0.4)]"></i> Apus: ${sunsetTime}</div>
+                        <div class="flex items-center"><i class="fa-solid fa-sun w-4 text-amber-500 dark:text-amber-400 drop-shadow-[0_0_2px_rgba(251,191,36,0.4)]"></i> Răsărit: ${sunriseTime}</div>
+                        <div class="flex items-center"><i class="fa-solid fa-moon w-4 text-indigo-500 dark:text-indigo-400 drop-shadow-[0_0_2px_rgba(129,140,248,0.4)]"></i> Apus: ${sunsetTime}</div>
                     </div>
                 </div>
             </div>
@@ -437,9 +465,11 @@ document.getElementById('search-form').addEventListener('submit', (e) => {
 
 document.getElementById('btn-unit').addEventListener('click', () => {
     currentUnit = currentUnit === 'C' ? 'F' : 'C';
-    localStorage.setItem('tempUnit', currentUnit); // Salvare unitate de măsură
+    localStorage.setItem('tempUnit', currentUnit);
     if (lastWeatherData) updateUI(lastWeatherData, lastLocName, lastCountry);
 });
+
+document.getElementById('btn-theme').addEventListener('click', cycleTheme);
 
 document.getElementById('btn-location').addEventListener('click', () => {
     if (navigator.geolocation) {
@@ -458,14 +488,12 @@ document.getElementById('btn-location').addEventListener('click', () => {
     }
 });
 
-// Inițializare aplicație
 const savedCity = localStorage.getItem('lastCity') || 'Constanța';
 document.getElementById('unit-label').textContent = `°${currentUnit}`;
 loadCity(savedCity);
 
 // ==========================================
 // 7. LOGICĂ AUTOCOMPLETARE ȘI MODAL PLIMBARE
-// (restul codului pentru funcționalități extra)
 // ==========================================
 function attachAutocomplete(inputId, suggestId, onSelectCallback) {
     const input = document.getElementById(inputId);
@@ -495,13 +523,13 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
                         const admin = city.admin1 ? `, ${city.admin1}` : '';
                         const country = city.country ? ` (${city.country})` : '';
                         const regex = new RegExp(`^(${val})`, 'i');
-                        const highlightedName = city.name.replace(regex, `<span class="text-white font-bold">$1</span>`);
+                        const highlightedName = city.name.replace(regex, `<span class="text-slate-900 dark:text-white font-bold">$1</span>`);
                         
-                        return `<div class="px-3 py-2.5 hover:bg-slate-700/60 cursor-pointer transition flex items-center" data-name="${city.name}">
-                            <i class="fa-solid fa-map-pin text-slate-500 mr-2 text-[10px]"></i>
+                        return `<div class="px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700/60 cursor-pointer transition flex items-center" data-name="${city.name}">
+                            <i class="fa-solid fa-map-pin text-slate-400 dark:text-slate-500 mr-2 text-[10px]"></i>
                             <div class="flex-1 truncate pointer-events-none">
-                                <span class="text-slate-400 text-sm">${highlightedName}</span>
-                                <span class="text-slate-500 text-[10px] ml-1">${admin}${country}</span>
+                                <span class="text-slate-600 dark:text-slate-400 text-sm">${highlightedName}</span>
+                                <span class="text-slate-400 dark:text-slate-500 text-[10px] ml-1">${admin}${country}</span>
                             </div>
                         </div>`;
                     }).join('');
@@ -569,13 +597,13 @@ function setTripMode(mode) {
     const btnCfr = document.getElementById('btn-train-cfr');
     
     if (mode === 'car') {
-        btnCar.className = "flex-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center";
-        btnTransit.className = "flex-1 text-slate-400 hover:bg-slate-800/60 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center";
+        btnCar.className = "flex-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/50 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center";
+        btnTransit.className = "flex-1 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800/60 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center";
         btnCfr.classList.add('hidden'); 
         selectedTrain = null;
     } else {
-        btnTransit.className = "flex-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center";
-        btnCar.className = "flex-1 text-slate-400 hover:bg-slate-800/60 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center";
+        btnTransit.className = "flex-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/50 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center";
+        btnCar.className = "flex-1 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800/60 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center";
         btnCfr.classList.remove('hidden'); 
     }
 }
@@ -612,13 +640,13 @@ async function openTrainModal() {
     }
     document.getElementById('train-modal').classList.remove('hidden');
     const listContainer = document.getElementById('train-list');
-    listContainer.innerHTML = '<div class="text-center text-slate-400 py-6"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i><br>Se interoghează rutele CFR...</div>';
+    listContainer.innerHTML = '<div class="text-center text-slate-500 dark:text-slate-400 py-6"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i><br>Se interoghează rutele CFR...</div>';
 
     try {
         const origCoords = await getCoordinates(origName);
         const destCoords = await getCoordinates(destName);
         if(!origCoords || !destCoords) {
-            listContainer.innerHTML = '<div class="text-center text-rose-400 py-4">Locații invalide.</div>';
+            listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Locații invalide.</div>';
             return;
         }
 
@@ -627,9 +655,9 @@ async function openTrainModal() {
         
         let html = '';
         const trains = [
-            { type: 'IC 531', speed: 85, color: 'text-emerald-400' },
-            { type: 'IR 1582', speed: 65, color: 'text-blue-400' },
-            { type: 'R 8001', speed: 45, color: 'text-slate-300' }
+            { type: 'IC 531', speed: 85, color: 'text-emerald-600 dark:text-emerald-400' },
+            { type: 'IR 1582', speed: 65, color: 'text-blue-600 dark:text-blue-400' },
+            { type: 'R 8001', speed: 45, color: 'text-slate-600 dark:text-slate-300' }
         ];
 
         const destNameClean = destName.replace(/'/g, "\\'");
@@ -645,25 +673,25 @@ async function openTrainModal() {
             const m = Math.round((durationHrs - h) * 60);
 
             html += `
-                <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5 hover:border-sky-500/50 transition cursor-pointer flex justify-between items-center" 
+                <div class="bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-white/5 hover:border-sky-400 dark:hover:border-sky-500/50 transition cursor-pointer flex justify-between items-center" 
                      onclick="selectCfrTrain('${tr.type}', '${dep.toISOString()}', ${durationHrs}, '${destNameClean}')">
                     <div>
                         <div class="${tr.color} font-bold text-sm mb-1"><i class="fa-solid fa-train mr-1"></i> ${tr.type}</div>
-                        <div class="text-[10px] text-slate-300 uppercase tracking-wide">
-                            Plec: <span class="text-white font-bold text-xs">${depStr}</span> &bull; 
-                            Sos: <span class="text-white font-bold text-xs">${arrStr}</span>
+                        <div class="text-[10px] text-slate-500 dark:text-slate-300 uppercase tracking-wide">
+                            Plec: <span class="text-slate-800 dark:text-white font-bold text-xs">${depStr}</span> &bull; 
+                            Sos: <span class="text-slate-800 dark:text-white font-bold text-xs">${arrStr}</span>
                         </div>
                     </div>
                     <div class="text-right">
                         <div class="text-[9px] text-slate-400 uppercase">Durată</div>
-                        <div class="text-xs font-bold text-white bg-slate-800 px-2 py-1 rounded">${h}h ${m}m</div>
+                        <div class="text-xs font-bold text-white bg-slate-400 dark:bg-slate-800 px-2 py-1 rounded">${h}h ${m}m</div>
                     </div>
                 </div>
             `;
         });
         listContainer.innerHTML = html;
     } catch (err) {
-        listContainer.innerHTML = '<div class="text-center text-rose-400 py-4">Eroare conexiune.</div>';
+        listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Eroare conexiune.</div>';
     }
 }
 
@@ -736,7 +764,7 @@ async function processTrip() {
         const m = Math.round((durationHrs - h) * 60);
         
         const trainTypeText = isTrainRoute ? ` (${selectedTrain.type})` : '';
-        document.getElementById('trip-duration').innerHTML = `${h}h ${m}m <span class="text-emerald-400 font-normal">${trainTypeText}</span>`;
+        document.getElementById('trip-duration').innerHTML = `${h}h ${m}m <span class="text-emerald-600 dark:text-emerald-400 font-normal">${trainTypeText}</span>`;
         
         const arrOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' };
         document.getElementById('trip-arrival').textContent = arrDate.toLocaleString('ro-RO', arrOptions);

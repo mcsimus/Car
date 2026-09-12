@@ -1,16 +1,12 @@
 body {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     background-attachment: fixed;
-    color: #e2e8f0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     overflow-x: hidden;
 }
 
 .glass-card {
-    background: rgba(30, 41, 59, 0.4);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
@@ -25,9 +21,9 @@ body {
 @keyframes drift { from { transform: translateX(-10vw); } to { transform: translateX(110vw); } }
 @keyframes fall { to { transform: translateY(100vh); } }
 
-.cloud-anim { position: absolute; color: rgba(255,255,255,0.04); animation: drift linear infinite; }
-.rain-anim { position: absolute; top: -50px; width: 1px; height: 30px; background: rgba(96, 165, 250, 0.3); animation: fall linear infinite; }
-.snow-anim { position: absolute; top: -50px; width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, 0.5); animation: fall linear infinite; }
+.cloud-anim { position: absolute; animation: drift linear infinite; }
+.rain-anim { position: absolute; top: -50px; width: 1px; height: 30px; animation: fall linear infinite; }
+.snow-anim { position: absolute; top: -50px; width: 6px; height: 6px; border-radius: 50%; animation: fall linear infinite; }
 
-/* Adăugat pentru input-urile datetime */
 .color-scheme-dark { color-scheme: dark; }
+.color-scheme-light { color-scheme: light; }
