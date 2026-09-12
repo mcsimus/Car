@@ -527,6 +527,7 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
 
         timeout = setTimeout(async () => {
             try {
+                // S-a extins limita la 8 pentru a oferi mai multe rezultate
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&addressdetails=1&limit=8&accept-language=ro`);
                 const data = await res.json();
                 
@@ -571,7 +572,7 @@ attachAutocomplete('search-input', 'main-suggestions', (name) => { loadCity(name
 attachAutocomplete('trip-origin', 'orig-suggestions', null);
 attachAutocomplete('trip-dest', 'dest-suggestions', null);
 
-// Permite modificarea manuală a datei/orei fără a bloca selecția
+// Permite modificarea manuală a datei/orei fără a bloca selecția anterioară
 document.getElementById('trip-datetime').addEventListener('input', () => {
     selectedTrain = null;
     document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
@@ -682,10 +683,12 @@ async function openTrainModal() {
 
                 const trainNum = tr.trainNumber || "1582";
                 const dateFormatted = `${String(dep.getDate()).padStart(2, '0')}.${String(dep.getMonth() + 1).padStart(2, '0')}.${dep.getFullYear()}`;
+                
+                // Construim link-ul utilizând codul pur al trenului
                 const infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Tren/${trainNum}?Date=${dateFormatted}&SelectedBranchCode=554323`;
 
                 html += `
-                    <div class="bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition flex justify-between items-center" 
+                    <div class="bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition flex justify-between items-center cursor-pointer" 
                          onclick="selectCfrTrain('${tr.type}', '${tr.departureISO}', ${tr.durationHrs}, '${destName.replace(/'/g, "\\'")}', '${infoferLink}')">
                         <div>
                             <div class="${tr.color} font-bold text-sm mb-1"><i class="fa-solid fa-train mr-1"></i> ${tr.type}</div>
@@ -727,6 +730,7 @@ function selectCfrTrain(type, depIso, durationHrs, destCity, infoferLink) {
     else if (cityLow.includes('iasi') || cityLow.includes('iași')) station = "Iași";
     else if (cityLow.includes('constan')) station = "Constanța";
     
+    // Stocăm exact tipul (ex: IR 16082) și link-ul aferent pentru afișarea ulterioară
     selectedTrain = { type: type, durationHrs: durationHrs, destStation: station, link: infoferLink };
     closeTrainModal();
     document.getElementById('btn-train-cfr').classList.add('ring-2', 'ring-emerald-400');
@@ -779,6 +783,7 @@ async function processTrip() {
         const h = Math.floor(durationHrs);
         const m = Math.round((durationHrs - h) * 60);
         
+        // Afișăm link-ul Infofer curat cu tipul și numărul trenului (ex: IR 16082)
         const trainTypeText = isTrainRoute ? ` (<a href="${selectedTrain.link}" target="_blank" class="underline text-sky-600 dark:text-sky-400 hover:text-sky-500">${selectedTrain.type} <i class="fa-solid fa-external-link text-[10px]"></i></a>)` : '';
         document.getElementById('trip-duration').innerHTML = `${h}h ${m}m <span class="text-emerald-600 dark:text-emerald-400 font-normal">${trainTypeText}</span>`;
         
