@@ -504,7 +504,7 @@ document.getElementById('unit-label').textContent = `°${currentUnit}`;
 loadCity(savedCity);
 
 // ==========================================
-// 7. LOGICĂ AUTOCOMPLETARE (NOMINATIM) ȘI MODAL PLIMBARE
+// 7. LOGICĂ AUTOCOMPLETARE ȘI MODAL PLIMBARE
 // ==========================================
 function attachAutocomplete(inputId, suggestId, onSelectCallback) {
     const input = document.getElementById(inputId);
@@ -570,22 +570,31 @@ attachAutocomplete('search-input', 'main-suggestions', (name) => { loadCity(name
 attachAutocomplete('trip-origin', 'orig-suggestions', null);
 attachAutocomplete('trip-dest', 'dest-suggestions', null);
 
-// Resetăm trenul selectat dacă utilizatorul modifică manual data sau ora din input
-document.getElementById('trip-datetime').addEventListener('input', () => {
-    selectedTrain = null;
-    document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
-    document.getElementById('trip-summary').classList.add('hidden');
-    document.getElementById('trip-results').classList.add('hidden');
-});
-
 let tripMode = 'car';
 let selectedTrain = null; 
+
+// ==========================================
+// 8. INITIALIZARE FLATPICKR (CALENDAR 24H)
+// ==========================================
+flatpickr("#trip-datetime", {
+    enableTime: true,
+    dateFormat: "Y-m-d\\TH:i",
+    time_24hr: true,
+    locale: "ro",
+    onChange: function(selectedDates, dateStr, instance) {
+        selectedTrain = null;
+        document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
+        document.getElementById('trip-summary').classList.add('hidden');
+        document.getElementById('trip-results').classList.add('hidden');
+    }
+});
 
 function openTripModal() {
     document.getElementById('trip-modal').classList.remove('hidden');
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    document.getElementById('trip-datetime').value = now.toISOString().slice(0,16);
+    const fp = document.getElementById('trip-datetime')._flatpickr;
+    if(fp) fp.setDate(now);
     fillCurrentLocationTrip(); 
 }
 
@@ -681,7 +690,6 @@ async function openTrainModal() {
 
                 const trainNum = tr.trainNumber || "1582";
                 const dateFormatted = `${String(dep.getDate()).padStart(2, '0')}.${String(dep.getMonth() + 1).padStart(2, '0')}.${dep.getFullYear()}`;
-                
                 const infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Tren/${trainNum}?Date=${dateFormatted}`;
 
                 html += `
@@ -717,7 +725,8 @@ function closeTrainModal() {
 function selectCfrTrain(type, depIso, durationHrs, destCity, infoferLink) {
     const d = new Date(depIso);
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    document.getElementById('trip-datetime').value = d.toISOString().slice(0,16);
+    const fp = document.getElementById('trip-datetime')._flatpickr;
+    if(fp) fp.setDate(d);
     
     let station = "Gara " + destCity;
     const cityLow = destCity.toLowerCase();
