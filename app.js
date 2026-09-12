@@ -639,13 +639,16 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 async function openTrainModal() {
     const origName = document.getElementById('trip-origin').value.trim();
     const destName = document.getElementById('trip-dest').value.trim();
+    // Preluăm valoarea introdusă de utilizator la Dată și Oră
+    const datetimeInput = document.getElementById('trip-datetime').value;
+
     if(!origName || !destName) {
         alert("Te rog completează Plecarea și Destinația întâi!");
         return;
     }
     document.getElementById('train-modal').classList.remove('hidden');
     const listContainer = document.getElementById('train-list');
-    listContainer.innerHTML = '<div class="text-center text-slate-500 dark:text-slate-400 py-6"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i><br>Se interoghează rutele CFR...</div>';
+    listContainer.innerHTML = '<div class="text-center text-slate-500 dark:text-slate-400 py-6"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i><br>Se caută rute disponibile...</div>';
 
     try {
         const origCoords = await getCoordinates(origName);
@@ -656,33 +659,45 @@ async function openTrainModal() {
         }
 
         const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
-        let baseDate = new Date(document.getElementById('trip-datetime').value || new Date());
+        
+        // Stabilim momentul de bază: ce a introdus utilizatorul (sau acum, dacă e gol)
+        let baseDate = new Date(datetimeInput || new Date());
         
         let html = '';
+        
+        // Definim 4 trenuri cu viteze diferite și intervale realiste de plecare
+        // delayMins = la câte minute DUPĂ ora introdusă de utilizator pleacă trenul
         const trains = [
-            { type: 'IC 531', speed: 85, color: 'text-emerald-600 dark:text-emerald-400' },
-            { type: 'IR 1582', speed: 65, color: 'text-blue-600 dark:text-blue-400' },
-            { type: 'R 8001', speed: 45, color: 'text-slate-600 dark:text-slate-300' }
+            { type: 'IR 1582', speed: 65, color: 'text-blue-600 dark:text-blue-400', delayMins: 15 },
+            { type: 'R 8001',  speed: 45, color: 'text-slate-600 dark:text-slate-300', delayMins: 55 },
+            { type: 'IC 531',  speed: 85, color: 'text-emerald-600 dark:text-emerald-400', delayMins: 130 },
+            { type: 'IR 1634', speed: 65, color: 'text-blue-600 dark:text-blue-400', delayMins: 210 }
         ];
 
         const destNameClean = destName.replace(/'/g, "\\'");
 
-        trains.forEach((tr, idx) => {
+        trains.forEach((tr) => {
             const durationHrs = dist / tr.speed;
-            const dep = new Date(baseDate.getTime() + (idx * 1.5) * 3600000); 
-            const arr = new Date(dep.getTime() + durationHrs * 3600000);
+            
+            // Calculăm ora exactă de plecare adăugând minutele de așteptare la ora selectată
+            const dep = new Date(baseDate.getTime() + (tr.delayMins * 60000)); 
+            const arr = new Date(dep.getTime() + (durationHrs * 3600000));
             
             const depStr = dep.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
             const arrStr = arr.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+            const dateStr = dep.toLocaleDateString('ro-RO', {day: '2-digit', month: '2-digit'});
+            
             const h = Math.floor(durationHrs);
             const m = Math.round((durationHrs - h) * 60);
 
-            // Adăugat dark:border-slate-600 pe rutele de tren
             html += `
                 <div class="bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition cursor-pointer flex justify-between items-center" 
                      onclick="selectCfrTrain('${tr.type}', '${dep.toISOString()}', ${durationHrs}, '${destNameClean}')">
                     <div>
-                        <div class="${tr.color} font-bold text-sm mb-1"><i class="fa-solid fa-train mr-1"></i> ${tr.type}</div>
+                        <div class="${tr.color} font-bold text-sm mb-1">
+                            <i class="fa-solid fa-train mr-1"></i> ${tr.type}
+                            <span class="text-[9px] text-slate-400 dark:text-slate-500 ml-2 font-normal">${dateStr}</span>
+                        </div>
                         <div class="text-[10px] text-slate-500 dark:text-slate-300 uppercase tracking-wide">
                             Plec: <span class="text-slate-800 dark:text-white font-bold text-xs">${depStr}</span> &bull; 
                             Sos: <span class="text-slate-800 dark:text-white font-bold text-xs">${arrStr}</span>
@@ -697,7 +712,7 @@ async function openTrainModal() {
         });
         listContainer.innerHTML = html;
     } catch (err) {
-        listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Eroare conexiune.</div>';
+        listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Eroare la procesarea rutelor.</div>';
     }
 }
 
