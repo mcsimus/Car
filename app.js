@@ -1,0 +1,784 @@
+// ==========================================
+// 1. STARE GLOBALĂ ȘI CONSTANTE
+// ==========================================
+let currentUnit = localStorage.getItem('tempUnit') || 'C';
+let lastWeatherData = null;
+let lastLocName = '';
+let lastCountry = '';
+
+// Dicționarul de coduri meteo WMO
+const WMO_CODES = {
+    0: { desc: 'Cer senin', icon: 'fa-sun', color: 'text-yellow-400' },
+    1: { desc: 'Preponderent senin', icon: 'fa-sun', color: 'text-yellow-300' },
+    2: { desc: 'Parțial înnorat', icon: 'fa-cloud-sun', color: 'text-sky-200' },
+    3: { desc: 'Înnorat', icon: 'fa-cloud', color: 'text-white' },
+    45: { desc: 'Ceață', icon: 'fa-smog', color: 'text-slate-300' },
+    48: { desc: 'Ceață înghețată', icon: 'fa-smog', color: 'text-slate-300' },
+    51: { desc: 'Burniță ușoară', icon: 'fa-cloud-rain', color: 'text-blue-300' },
+    53: { desc: 'Burniță moderată', icon: 'fa-cloud-rain', color: 'text-blue-400' },
+    55: { desc: 'Burniță densă', icon: 'fa-cloud-rain', color: 'text-blue-500' },
+    56: { desc: 'Burniță înghețată', icon: 'fa-cloud-rain', color: 'text-cyan-300' },
+    57: { desc: 'Burniță densă', icon: 'fa-cloud-rain', color: 'text-cyan-400' },
+    61: { desc: 'Ploaie ușoară', icon: 'fa-cloud-rain', color: 'text-blue-400' },
+    63: { desc: 'Ploaie moderată', icon: 'fa-cloud-rain', color: 'text-blue-500' },
+    65: { desc: 'Ploaie puternică', icon: 'fa-cloud-showers-heavy', color: 'text-indigo-400' },
+    66: { desc: 'Ploaie înghețată', icon: 'fa-cloud-rain', color: 'text-cyan-400' },
+    67: { desc: 'Ploaie puternică', icon: 'fa-cloud-showers-heavy', color: 'text-cyan-500' },
+    71: { desc: 'Ninsoare ușoară', icon: 'fa-snowflake', color: 'text-indigo-200' },
+    73: { desc: 'Ninsoare moderată', icon: 'fa-snowflake', color: 'text-indigo-300' },
+    75: { desc: 'Ninsoare puternică', icon: 'fa-snowflake', color: 'text-indigo-400' },
+    77: { desc: 'Grindină fină', icon: 'fa-snowflake', color: 'text-indigo-200' },
+    80: { desc: 'Averse ușoare', icon: 'fa-cloud-rain', color: 'text-blue-400' },
+    81: { desc: 'Averse moderate', icon: 'fa-cloud-showers-heavy', color: 'text-blue-500' },
+    82: { desc: 'Averse violente', icon: 'fa-cloud-showers-heavy', color: 'text-indigo-500' },
+    85: { desc: 'Averse ninsoare', icon: 'fa-snowflake', color: 'text-indigo-200' },
+    86: { desc: 'Averse ninsoare', icon: 'fa-snowflake', color: 'text-indigo-300' },
+    95: { desc: 'Furtună', icon: 'fa-cloud-bolt', color: 'text-purple-400' },
+    96: { desc: 'Furtună grindină', icon: 'fa-cloud-bolt', color: 'text-purple-500' },
+    99: { desc: 'Furtună severă', icon: 'fa-cloud-bolt', color: 'text-purple-600' }
+};
+
+const daysRO = ['Dum.', 'Lun.', 'Mar.', 'Mie.', 'Joi', 'Vin.', 'Sâm.'];
+
+// ==========================================
+// 2. FUNCȚII UTILITARE
+// ==========================================
+function formatTemp(tempC) { 
+    return currentUnit === 'F' ? Math.round((tempC * 9/5) + 32) : Math.round(tempC); 
+}
+
+function updateDateTime() {
+    const now = new Date();
+    const optionsDate = { weekday: 'long', day: 'numeric', month: 'long' };
+    let dateStr = now.toLocaleDateString('ro-RO', optionsDate);
+    const timeStr = now.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+    dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+    document.getElementById('current-datetime').innerHTML = `${dateStr} &bull; ${timeStr}`;
+}
+setInterval(updateDateTime, 1000);
+updateDateTime();
+
+// ==========================================
+// 3. API FETCH
+// ==========================================
+async function getCoordinates(city) {
+    try {
+        const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=ro&format=json`);
+        const data = await res.json();
+        return data.results && data.results.length > 0 ? data.results[0] : null;
+    } catch (err) { return null; }
+}
+
+async function getExactCityName(lat, lon) {
+    try {
+        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ro`);
+        const data = await res.json();
+        return data.city || data.locality || "Locație necunoscută";
+    } catch (err) { return "Locație necunoscută"; }
+}
+
+async function getFullData(lat, lon) {
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,surface_pressure&hourly=temperature_2m,weather_code,surface_pressure,wind_speed_10m,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max,wind_speed_10m_max&past_days=3&timezone=auto`;
+    const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=european_aqi,pm10,pm2_5&timezone=auto`;
+    const marineUrl = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=wave_height,wave_direction&timezone=auto`;
+
+    const [weatherRes, aqiRes, marineRes] = await Promise.allSettled([
+        fetch(weatherUrl).then(r => r.json()),
+        fetch(aqiUrl).then(r => r.json()),
+        fetch(marineUrl).then(r => r.json())
+    ]);
+
+    return {
+        weather: weatherRes.status === 'fulfilled' ? weatherRes.value : null,
+        aqi: aqiRes.status === 'fulfilled' ? aqiRes.value : null,
+        marine: marineRes.status === 'fulfilled' ? marineRes.value : null
+    };
+}
+
+async function loadCity(city) {
+    const location = await getCoordinates(city);
+    if(location) {
+        localStorage.setItem('lastCity', location.name); // Salvare oraș pentru sesiuni viitoare
+        const fullData = await getFullData(location.latitude, location.longitude);
+        updateUI(fullData, location.name, location.country_code);
+    } else { alert("Orașul nu a fost găsit."); }
+}
+
+// ==========================================
+// 4. FUNCȚIA DISPECER UI (REFACTORIZATĂ)
+// ==========================================
+function updateUI(fullData, locationName, country) {
+    lastWeatherData = fullData;
+    lastLocName = locationName;
+    lastCountry = country;
+
+    const weather = fullData.weather;
+    if(!weather) return;
+
+    // Calculăm indexul zilei de azi (Open-Meteo returnează și date din trecut)
+    const todayStr = weather.current.time.split('T')[0];
+    let todayIdx = weather.daily.time.indexOf(todayStr);
+    if(todayIdx === -1) todayIdx = 3;
+
+    // Actualizăm fiecare modul separat
+    updateHeaderInfo(locationName, country);
+    updateCurrentWeather(weather);
+    renderWeatherAnimations(weather.current.weather_code);
+    drawPressureChart(weather, todayIdx);
+    updateAQI(fullData.aqi);
+    updateMarine(fullData.marine);
+    updateWardrobeAssistant(weather, todayIdx);
+    updateCarWashIndex(weather, todayIdx);
+    renderHourlyForecast(weather);
+    renderDailyForecast(weather, todayIdx);
+}
+
+// ==========================================
+// 5. MODULE UI SPECIFICE
+// ==========================================
+function updateHeaderInfo(locationName, country) {
+    document.getElementById('city-name').textContent = country ? `${locationName}, ${country}` : locationName;
+    document.getElementById('unit-label').textContent = `°${currentUnit}`;
+}
+
+function updateCurrentWeather(weather) {
+    document.getElementById('current-temp').textContent = formatTemp(weather.current.temperature_2m);
+    document.getElementById('feels-like').textContent = formatTemp(weather.current.apparent_temperature);
+    document.getElementById('wind-speed').textContent = Math.round(weather.current.wind_speed_10m);
+    document.getElementById('humidity').textContent = weather.current.relative_humidity_2m;
+    document.getElementById('precip').textContent = weather.current.precipitation;
+    document.getElementById('current-pressure').textContent = Math.round(weather.current.surface_pressure);
+    
+    const codeInfo = WMO_CODES[weather.current.weather_code] || WMO_CODES[0];
+    document.getElementById('current-desc').textContent = codeInfo.desc;
+    document.getElementById('current-icon').className = `fa-solid ${codeInfo.icon} text-6xl ${codeInfo.color} drop-shadow-[0_0_15px_currentColor]`;
+}
+
+function renderWeatherAnimations(code) {
+    const container = document.getElementById('weather-animations');
+    container.innerHTML = ''; 
+    if(code !== 0 && code !== 1) {
+        for(let i=0; i<4; i++) {
+            const cloud = document.createElement('i');
+            cloud.className = 'fa-solid fa-cloud cloud-anim';
+            cloud.style.top = `${Math.random() * 40}%`;
+            cloud.style.fontSize = `${Math.random() * 6 + 4}rem`;
+            cloud.style.animationDuration = `${Math.random() * 30 + 30}s`;
+            cloud.style.animationDelay = `-${Math.random() * 30}s`;
+            container.appendChild(cloud);
+        }
+    }
+    if([51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99].includes(code)) {
+        for(let i=0; i<20; i++) {
+            const drop = document.createElement('div');
+            drop.className = 'rain-anim';
+            drop.style.left = `${Math.random() * 100}vw`;
+            drop.style.animationDuration = `${Math.random() * 0.5 + 0.5}s`;
+            drop.style.animationDelay = `${Math.random()}s`;
+            container.appendChild(drop);
+        }
+    }
+    if([71,73,75,77,85,86].includes(code)) {
+        for(let i=0; i<25; i++) {
+            const flake = document.createElement('div');
+            flake.className = 'snow-anim';
+            flake.style.left = `${Math.random() * 100}vw`;
+            flake.style.animationDuration = `${Math.random() * 3 + 2}s`;
+            flake.style.animationDelay = `${Math.random() * 2}s`;
+            container.appendChild(flake);
+        }
+    }
+}
+
+function updateAQI(aqiData) {
+    const valEl = document.getElementById('aqi-val');
+    const descEl = document.getElementById('aqi-desc');
+    if(!aqiData || !aqiData.current) {
+        valEl.textContent = '--'; 
+        descEl.innerHTML = '<i class="fa-solid fa-circle-question"></i>'; 
+        return;
+    }
+    const aqi = aqiData.current.european_aqi;
+    valEl.textContent = aqi;
+    document.getElementById('aqi-pm25').textContent = aqiData.current.pm2_5.toFixed(1);
+    document.getElementById('aqi-pm10').textContent = aqiData.current.pm10.toFixed(1);
+    
+    let color = 'text-emerald-400'; 
+    let icon = '<i class="fa-solid fa-thumbs-up"></i>';
+    if(aqi > 20) { color = 'text-yellow-400'; icon = '<i class="fa-solid fa-thumbs-up"></i>'; }
+    if(aqi > 40) { color = 'text-orange-400'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
+    if(aqi > 60) { color = 'text-rose-500'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
+    if(aqi > 80) { color = 'text-purple-500'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
+    
+    descEl.innerHTML = icon;
+    descEl.className = `text-xl ${color} drop-shadow-md transition-colors duration-300`;
+}
+
+function updateMarine(marineData) {
+    const module = document.getElementById('marine-module');
+    if(!marineData || !marineData.current || marineData.current.wave_height === null) {
+        module.classList.add('hidden');
+        return;
+    }
+    module.classList.remove('hidden');
+    document.getElementById('marine-wave').textContent = marineData.current.wave_height.toFixed(1);
+    const dir = marineData.current.wave_direction;
+    document.getElementById('marine-dir').textContent = dir;
+    document.getElementById('marine-dir-icon').style.transform = `rotate(${dir}deg)`;
+}
+
+function drawPressureChart(weather, todayIdx) {
+    const pData = [];
+    const labels = [];
+    for(let i = todayIdx - 3; i <= todayIdx + 3; i++) {
+        if(!weather.daily.time[i]) continue;
+        const dDate = new Date(weather.daily.time[i] + "T12:00:00");
+        labels.push(i === todayIdx ? 'Azi' : daysRO[dDate.getDay()]);
+        const targetTime = weather.daily.time[i] + "T12:00";
+        let hIdx = weather.hourly.time.indexOf(targetTime);
+        if(hIdx === -1) hIdx = i * 24 + 12; 
+        pData.push(weather.hourly.surface_pressure[hIdx]);
+    }
+    const minP = Math.min(...pData) - 1;
+    const maxP = Math.max(...pData) + 1;
+    const svg = document.getElementById('pressure-svg');
+    svg.setAttribute('viewBox', '0 0 100 40');
+    
+    let points = '';
+    pData.forEach((val, idx) => {
+        const x = (idx / (pData.length - 1)) * 100;
+        const y = 40 - ((val - minP) / (maxP - minP)) * 36 - 2; 
+        points += `${x},${y} `;
+    });
+    const polyline = `<polyline points="${points.trim()}" fill="none" stroke="#64748b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />`;
+    
+    let dots = '';
+    pData.forEach((val, idx) => {
+        const x = (idx / (pData.length - 1)) * 100;
+        const y = 40 - ((val - minP) / (maxP - minP)) * 36 - 2;
+        const isToday = idx === 3;
+        dots += `<circle cx="${x}" cy="${y}" r="${isToday ? 2.5 : 1.5}" fill="${isToday ? '#38bdf8' : '#e2e8f0'}" class="drop-shadow-md" />`;
+    });
+    svg.innerHTML = polyline + dots;
+    document.getElementById('pressure-labels').innerHTML = labels.map((l, i) => `<div class="${i === 3 ? 'text-emerald-400 font-bold scale-110' : ''}">${l}</div>`).join('');
+}
+
+function getEquipmentTags(temp, code, wind, precipProb, isDay = true) {
+    let tags = [];
+    if (temp >= 24 && [0, 1, 2].includes(code)) {
+        if (isDay) { tags.push({ icon: '🕶️', text: 'Ochelari' }); tags.push({ icon: '🧢', text: 'Pălărie' }); }
+        tags.push({ icon: '💧', text: 'Apă' });
+    }
+    if (temp < 10) tags.push({ icon: '🧥', text: 'Geacă' });
+    if ([95, 96, 99].includes(code)) tags.push({ icon: '⚡', text: 'Furtună' });
+    else if ([71, 73, 75, 77, 85, 86].includes(code)) tags.push({ icon: '🥾', text: 'Bocanci' });
+    else if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) tags.push({ icon: '☂️', text: 'Umbrelă' });
+    else if (precipProb >= 20 && precipProb < 60) tags.push({ icon: '🌂', text: 'Risc ploaie' });
+    if (wind >= 25) tags.push({ icon: '💨', text: 'Vânt' });
+    if (tags.length === 0) tags.push({ icon: '👍', text: 'Lejer' });
+    
+    return tags.map(t => `<span class="bg-slate-800/80 border border-white/5 text-[10px] text-slate-200 px-2 py-1.5 rounded-lg flex items-center shadow-sm cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"><span class="w-4 text-center text-sm">${t.icon}</span> <span class="ml-1 truncate">${t.text}</span></span>`).join('');
+}
+
+function updateWardrobeAssistant(weather, todayIdx) {
+    const uvVal = weather.daily.uv_index_max[todayIdx];
+    document.getElementById('uv-val').textContent = uvVal.toFixed(1);
+    let uvEl = document.getElementById('uv-desc');
+    let uvColor = 'text-emerald-400';
+    
+    if(uvVal < 3) { uvEl.textContent = 'Scăzut'; }
+    else if(uvVal < 6) { uvEl.textContent = 'Moderat'; uvColor = 'text-yellow-400'; }
+    else if(uvVal < 8) { uvEl.textContent = 'Ridicat'; uvColor = 'text-orange-400'; }
+    else if(uvVal < 11) { uvEl.textContent = 'F. Ridicat'; uvColor = 'text-rose-500'; }
+    else { uvEl.textContent = 'Extrem'; uvColor = 'text-purple-500'; }
+    uvEl.className = `text-[10px] font-bold uppercase tracking-wide pb-0.5 ${uvColor}`;
+
+    document.getElementById('sunrise-time').textContent = weather.daily.sunrise[todayIdx].split('T')[1];
+    document.getElementById('sunset-time').textContent = weather.daily.sunset[todayIdx].split('T')[1];
+
+    const nowHour = new Date(weather.current.time).getHours();
+    let sunriseHour = 6, sunsetHour = 19;
+    if (weather.daily.sunrise[todayIdx]) {
+        sunriseHour = parseInt(weather.daily.sunrise[todayIdx].split('T')[1].split(':')[0]);
+        sunsetHour = parseInt(weather.daily.sunset[todayIdx].split('T')[1].split(':')[0]);
+    }
+    const isDayNow = nowHour >= sunriseHour && nowHour < sunsetHour;
+    document.getElementById('equipment-now').innerHTML = getEquipmentTags(weather.current.temperature_2m, weather.current.weather_code, weather.current.wind_speed_10m, 0, isDayNow);
+    
+    const currentHourIdx = weather.hourly.time.findIndex(t => new Date(t) >= new Date());
+    let laterTemp = weather.current.temperature_2m, laterCode = 0, laterWind = 0, laterPrecipProb = 0;
+    let laterIsDay = false;
+    
+    if (currentHourIdx !== -1) {
+        const lookahead = Math.min(8, weather.hourly.time.length - currentHourIdx); 
+        let codes = [];
+        for (let i = currentHourIdx + 1; i < currentHourIdx + lookahead; i++) {
+            const h = new Date(weather.hourly.time[i]).getHours();
+            if (h >= sunriseHour && h < sunsetHour) laterIsDay = true;
+            if (weather.hourly.temperature_2m[i] > laterTemp) laterTemp = weather.hourly.temperature_2m[i];
+            if (weather.hourly.wind_speed_10m[i] > laterWind) laterWind = weather.hourly.wind_speed_10m[i];
+            codes.push(weather.hourly.weather_code[i]);
+        }
+        laterCode = Math.max(...codes);
+        let badCode = codes.find(c => c >= 50);
+        if (badCode) laterCode = badCode;
+        laterPrecipProb = weather.daily.precipitation_probability_max[todayIdx]; 
+    }
+    document.getElementById('equipment-later').innerHTML = getEquipmentTags(laterTemp, laterCode, laterWind, laterPrecipProb, laterIsDay);
+    
+    const tmrwIdx = todayIdx + 1;
+    if(weather.daily.time[tmrwIdx]) {
+        document.getElementById('equipment-tomorrow').innerHTML = getEquipmentTags(weather.daily.temperature_2m_max[tmrwIdx], weather.daily.weather_code[tmrwIdx], weather.daily.wind_speed_10m_max[tmrwIdx], weather.daily.precipitation_probability_max[tmrwIdx], true);
+    }
+}
+
+function updateCarWashIndex(weather, todayIdx) {
+    const probToday = weather.daily.precipitation_probability_max[todayIdx] || 0;
+    const probTmrw = weather.daily.precipitation_probability_max[todayIdx + 1] || 0;
+    const probDay3 = weather.daily.precipitation_probability_max[todayIdx + 2] || 0;
+    
+    const iconWash = document.getElementById('car-wash-icon');
+    const statusWash = document.getElementById('car-wash-status');
+    const cardWash = iconWash.closest('.glass-card');
+    
+    iconWash.className = 'fa-solid fa-car-side text-2xl transition-colors duration-500';
+    cardWash.className = 'glass-card rounded-2xl p-5 border-l-4 transition-colors duration-500 shadow-md border-t border-r border-b border-white/5';
+
+    if (probToday > 20 || probTmrw > 20) {
+        iconWash.classList.add('text-rose-500'); cardWash.classList.add('border-l-rose-500');
+        statusWash.textContent = 'Nefavorabil. Precipitații în 24h.';
+    } else if (probDay3 > 20) {
+        iconWash.classList.add('text-orange-500'); cardWash.classList.add('border-l-orange-500');
+        statusWash.textContent = 'Acceptabil. Risc ploaie în 2-3 zile.';
+    } else {
+        iconWash.classList.add('text-emerald-500'); cardWash.classList.add('border-l-emerald-500');
+        statusWash.textContent = 'Vreme excelentă! Fără ploaie 3 zile.';
+    }
+}
+
+function renderHourlyForecast(weather) {
+    const hourlyContainer = document.getElementById('hourly-container');
+    hourlyContainer.innerHTML = '';
+    const currentHourIdx = weather.hourly.time.findIndex(t => new Date(t) >= new Date());
+    
+    for(let i = currentHourIdx; i < currentHourIdx + 24; i+=1) { 
+        if(!weather.hourly.time[i]) break;
+        const timeObj = new Date(weather.hourly.time[i]);
+        const hourStr = timeObj.getHours().toString().padStart(2, '0') + ':00';
+        const temp = formatTemp(weather.hourly.temperature_2m[i]);
+        const hCodeInfo = WMO_CODES[weather.hourly.weather_code[i]] || { icon: 'fa-circle-question', color: 'text-slate-500' };
+        hourlyContainer.innerHTML += `
+            <div class="bg-slate-900/30 rounded-xl p-3 min-w-[65px] flex flex-col items-center justify-center space-y-2 border border-white/5 shadow-sm hover:bg-slate-800/60 transition cursor-default">
+                <div class="text-[10px] text-slate-400 font-medium">${hourStr}</div>
+                <i class="fa-solid ${hCodeInfo.icon} ${hCodeInfo.color} drop-shadow-md text-xl"></i>
+                <div class="font-bold text-sm text-white">${temp}°</div>
+            </div>
+        `;
+    }
+}
+
+function renderDailyForecast(weather, todayIdx) {
+    const dailyContainer = document.getElementById('daily-container');
+    dailyContainer.innerHTML = '';
+    for(let i = todayIdx; i < todayIdx + 7; i++) {
+        if(!weather.daily.time[i]) break;
+        const dateObj = new Date(weather.daily.time[i] + "T12:00:00");
+        const isToday = i === todayIdx;
+        const dayName = isToday ? 'Astăzi' : daysRO[dateObj.getDay()];
+        const minTemp = formatTemp(weather.daily.temperature_2m_min[i]);
+        const maxTemp = formatTemp(weather.daily.temperature_2m_max[i]);
+        const precipProb = weather.daily.precipitation_probability_max[i] || 0;
+        const dCodeInfo = WMO_CODES[weather.daily.weather_code[i]] || { icon: 'fa-circle-question', color: 'text-rose-500' };
+        const windMax = weather.daily.wind_speed_10m_max[i] ? Math.round(weather.daily.wind_speed_10m_max[i]) : '--';
+        const uvMax = weather.daily.uv_index_max[i] ? weather.daily.uv_index_max[i].toFixed(1) : '--';
+        const sunriseTime = weather.daily.sunrise[i] ? weather.daily.sunrise[i].split('T')[1] : '--:--';
+        const sunsetTime = weather.daily.sunset[i] ? weather.daily.sunset[i].split('T')[1] : '--:--';
+
+        let uvColorDrop = 'text-emerald-400';
+        if(uvMax !== '--') {
+            if(uvMax < 3) uvColorDrop = 'text-emerald-400';
+            else if(uvMax < 6) uvColorDrop = 'text-yellow-400';
+            else if(uvMax < 8) uvColorDrop = 'text-orange-400';
+            else if(uvMax < 11) uvColorDrop = 'text-rose-500';
+            else uvColorDrop = 'text-purple-500';
+        }
+
+        dailyContainer.innerHTML += `
+            <div class="bg-slate-900/20 rounded-xl border border-white/5 overflow-hidden transition-all duration-300">
+                <div class="flex items-center justify-between text-sm p-3 hover:bg-slate-800/40 cursor-pointer transition" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')">
+                    <div class="w-16 font-semibold ${isToday ? 'text-white' : 'text-slate-300'} flex items-center">
+                        ${dayName} <i class="fa-solid fa-chevron-down text-[9px] ml-1.5 text-slate-500 chevron transition-transform duration-300"></i>
+                    </div>
+                    <div class="w-8 flex justify-center"><i class="fa-solid ${dCodeInfo.icon} ${dCodeInfo.color} drop-shadow-md text-lg"></i></div>
+                    <div class="w-14 text-center text-[10px] text-blue-300 bg-blue-900/20 rounded-md py-0.5 font-medium"><i class="fa-solid fa-droplet text-[9px] mr-1 text-blue-400"></i>${precipProb}%</div>
+                    <div class="w-24 text-right font-bold text-white">${maxTemp}° <span class="text-slate-500 font-medium ml-1">/ ${minTemp}°</span></div>
+                </div>
+                <div class="hidden bg-slate-800/30 px-4 pb-3 pt-2 border-t border-white/5">
+                    <div class="grid grid-cols-2 gap-3 text-[10px] text-slate-300 font-medium">
+                        <div class="flex items-center"><i class="fa-solid fa-wind w-4 text-cyan-400 drop-shadow-[0_0_2px_rgba(34,211,238,0.4)]"></i> Rafale: ${windMax} km/h</div>
+                        <div class="flex items-center"><i class="fa-solid fa-glasses w-4 ${uvColorDrop} drop-shadow-[0_0_2px_currentColor]"></i> UV Max: ${uvMax}</div>
+                        <div class="flex items-center"><i class="fa-solid fa-sun w-4 text-amber-400 drop-shadow-[0_0_2px_rgba(251,191,36,0.4)]"></i> Răsărit: ${sunriseTime}</div>
+                        <div class="flex items-center"><i class="fa-solid fa-moon w-4 text-indigo-400 drop-shadow-[0_0_2px_rgba(129,140,248,0.4)]"></i> Apus: ${sunsetTime}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// ==========================================
+// 6. EVENT LISTENERS
+// ==========================================
+document.getElementById('search-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const city = document.getElementById('search-input').value.trim();
+    if(city) { loadCity(city); document.getElementById('search-input').value = ''; }
+});
+
+document.getElementById('btn-unit').addEventListener('click', () => {
+    currentUnit = currentUnit === 'C' ? 'F' : 'C';
+    localStorage.setItem('tempUnit', currentUnit); // Salvare unitate de măsură
+    if (lastWeatherData) updateUI(lastWeatherData, lastLocName, lastCountry);
+});
+
+document.getElementById('btn-location').addEventListener('click', () => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            try {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                document.getElementById('city-name').textContent = "Se obține locația...";
+                const [fullData, exactCityName] = await Promise.all([
+                    getFullData(lat, lon), getExactCityName(lat, lon)
+                ]);
+                localStorage.setItem('lastCity', exactCityName);
+                updateUI(fullData, exactCityName, "");
+            } catch (err) { alert("Eroare la obținerea datelor meteo."); }
+        }, () => alert("Permisiune locație refuzată."));
+    }
+});
+
+// Inițializare aplicație
+const savedCity = localStorage.getItem('lastCity') || 'Constanța';
+document.getElementById('unit-label').textContent = `°${currentUnit}`;
+loadCity(savedCity);
+
+// ==========================================
+// 7. LOGICĂ AUTOCOMPLETARE ȘI MODAL PLIMBARE
+// (restul codului pentru funcționalități extra)
+// ==========================================
+function attachAutocomplete(inputId, suggestId, onSelectCallback) {
+    const input = document.getElementById(inputId);
+    const suggest = document.getElementById(suggestId);
+    let timeout;
+
+    input.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        suggest.innerHTML = '';
+        suggest.classList.add('hidden');
+        
+        if(inputId === 'trip-origin' || inputId === 'trip-dest') {
+            selectedTrain = null;
+            document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
+        }
+
+        clearTimeout(timeout);
+        if (val.length < 2) return;
+
+        timeout = setTimeout(async () => {
+            try {
+                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=5&language=ro&format=json`);
+                const data = await res.json();
+                
+                if (data.results && data.results.length > 0) {
+                    suggest.innerHTML = data.results.map(city => {
+                        const admin = city.admin1 ? `, ${city.admin1}` : '';
+                        const country = city.country ? ` (${city.country})` : '';
+                        const regex = new RegExp(`^(${val})`, 'i');
+                        const highlightedName = city.name.replace(regex, `<span class="text-white font-bold">$1</span>`);
+                        
+                        return `<div class="px-3 py-2.5 hover:bg-slate-700/60 cursor-pointer transition flex items-center" data-name="${city.name}">
+                            <i class="fa-solid fa-map-pin text-slate-500 mr-2 text-[10px]"></i>
+                            <div class="flex-1 truncate pointer-events-none">
+                                <span class="text-slate-400 text-sm">${highlightedName}</span>
+                                <span class="text-slate-500 text-[10px] ml-1">${admin}${country}</span>
+                            </div>
+                        </div>`;
+                    }).join('');
+                    suggest.classList.remove('hidden');
+
+                    Array.from(suggest.children).forEach(item => {
+                        item.addEventListener('click', () => {
+                            const selectedName = item.getAttribute('data-name');
+                            input.value = selectedName;
+                            suggest.classList.add('hidden');
+                            if(onSelectCallback) onSelectCallback(selectedName);
+                        });
+                    });
+                }
+            } catch(err) { console.error(err); }
+        }, 300);
+    });
+
+    document.addEventListener('click', (e) => {
+        if(!input.contains(e.target) && !suggest.contains(e.target)) {
+            suggest.classList.add('hidden');
+        }
+    });
+}
+
+attachAutocomplete('search-input', 'main-suggestions', (name) => { loadCity(name); document.getElementById('search-input').value = ''; });
+attachAutocomplete('trip-origin', 'orig-suggestions', null);
+attachAutocomplete('trip-dest', 'dest-suggestions', null);
+
+let tripMode = 'car';
+let selectedTrain = null; 
+
+function openTripModal() {
+    document.getElementById('trip-modal').classList.remove('hidden');
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('trip-datetime').value = now.toISOString().slice(0,16);
+    fillCurrentLocationTrip(); 
+}
+
+function closeTripModal() {
+    document.getElementById('trip-modal').classList.add('hidden');
+    document.getElementById('trip-summary').classList.add('hidden');
+    document.getElementById('trip-results').classList.add('hidden');
+    selectedTrain = null;
+}
+
+function swapTripLocations() {
+    const origInput = document.getElementById('trip-origin');
+    const destInput = document.getElementById('trip-dest');
+    const temp = origInput.value;
+    origInput.value = destInput.value;
+    destInput.value = temp;
+
+    selectedTrain = null;
+    document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
+    document.getElementById('trip-summary').classList.add('hidden');
+    document.getElementById('trip-results').classList.add('hidden');
+}
+
+function setTripMode(mode) {
+    tripMode = mode;
+    const btnCar = document.getElementById('btn-mode-car');
+    const btnTransit = document.getElementById('btn-mode-transit');
+    const btnCfr = document.getElementById('btn-train-cfr');
+    
+    if (mode === 'car') {
+        btnCar.className = "flex-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center";
+        btnTransit.className = "flex-1 text-slate-400 hover:bg-slate-800/60 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center";
+        btnCfr.classList.add('hidden'); 
+        selectedTrain = null;
+    } else {
+        btnTransit.className = "flex-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center";
+        btnCar.className = "flex-1 text-slate-400 hover:bg-slate-800/60 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center";
+        btnCfr.classList.remove('hidden'); 
+    }
+}
+
+function fillCurrentLocationTrip() {
+    const origInput = document.getElementById('trip-origin');
+    origInput.value = "Se obține...";
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const name = await getExactCityName(lat, lon);
+            origInput.value = name;
+        }, () => { origInput.value = savedCity; });
+    } else {
+        origInput.value = savedCity;
+    }
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; 
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+async function openTrainModal() {
+    const origName = document.getElementById('trip-origin').value.trim();
+    const destName = document.getElementById('trip-dest').value.trim();
+    if(!origName || !destName) {
+        alert("Te rog completează Plecarea și Destinația întâi!");
+        return;
+    }
+    document.getElementById('train-modal').classList.remove('hidden');
+    const listContainer = document.getElementById('train-list');
+    listContainer.innerHTML = '<div class="text-center text-slate-400 py-6"><i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i><br>Se interoghează rutele CFR...</div>';
+
+    try {
+        const origCoords = await getCoordinates(origName);
+        const destCoords = await getCoordinates(destName);
+        if(!origCoords || !destCoords) {
+            listContainer.innerHTML = '<div class="text-center text-rose-400 py-4">Locații invalide.</div>';
+            return;
+        }
+
+        const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
+        let baseDate = new Date(document.getElementById('trip-datetime').value || new Date());
+        
+        let html = '';
+        const trains = [
+            { type: 'IC 531', speed: 85, color: 'text-emerald-400' },
+            { type: 'IR 1582', speed: 65, color: 'text-blue-400' },
+            { type: 'R 8001', speed: 45, color: 'text-slate-300' }
+        ];
+
+        const destNameClean = destName.replace(/'/g, "\\'");
+
+        trains.forEach((tr, idx) => {
+            const durationHrs = dist / tr.speed;
+            const dep = new Date(baseDate.getTime() + (idx * 1.5) * 3600000); 
+            const arr = new Date(dep.getTime() + durationHrs * 3600000);
+            
+            const depStr = dep.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+            const arrStr = arr.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+            const h = Math.floor(durationHrs);
+            const m = Math.round((durationHrs - h) * 60);
+
+            html += `
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-white/5 hover:border-sky-500/50 transition cursor-pointer flex justify-between items-center" 
+                     onclick="selectCfrTrain('${tr.type}', '${dep.toISOString()}', ${durationHrs}, '${destNameClean}')">
+                    <div>
+                        <div class="${tr.color} font-bold text-sm mb-1"><i class="fa-solid fa-train mr-1"></i> ${tr.type}</div>
+                        <div class="text-[10px] text-slate-300 uppercase tracking-wide">
+                            Plec: <span class="text-white font-bold text-xs">${depStr}</span> &bull; 
+                            Sos: <span class="text-white font-bold text-xs">${arrStr}</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[9px] text-slate-400 uppercase">Durată</div>
+                        <div class="text-xs font-bold text-white bg-slate-800 px-2 py-1 rounded">${h}h ${m}m</div>
+                    </div>
+                </div>
+            `;
+        });
+        listContainer.innerHTML = html;
+    } catch (err) {
+        listContainer.innerHTML = '<div class="text-center text-rose-400 py-4">Eroare conexiune.</div>';
+    }
+}
+
+function closeTrainModal() {
+    document.getElementById('train-modal').classList.add('hidden');
+}
+
+function selectCfrTrain(type, depIso, durationHrs, destCity) {
+    const d = new Date(depIso);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    document.getElementById('trip-datetime').value = d.toISOString().slice(0,16);
+    
+    let station = "Gara " + destCity;
+    const cityLow = destCity.toLowerCase();
+    if (cityLow.includes('bucure')) station = "București Nord";
+    else if (cityLow.includes('timi')) station = "Timișoara Nord";
+    else if (cityLow.includes('cluj')) station = "Cluj-Napoca";
+    else if (cityLow.includes('iasi') || cityLow.includes('iași')) station = "Iași";
+    
+    selectedTrain = { type: type, durationHrs: durationHrs, destStation: station };
+    closeTrainModal();
+    document.getElementById('btn-train-cfr').classList.add('ring-2', 'ring-emerald-400');
+}
+
+function getForecastAtTime(weatherData, targetMs) {
+    let minDiff = Infinity;
+    let closestIdx = 0;
+    weatherData.hourly.time.forEach((t, i) => {
+        const timeMs = new Date(t).getTime();
+        const diff = Math.abs(timeMs - targetMs);
+        if(diff < minDiff) { minDiff = diff; closestIdx = i; }
+    });
+    return {
+        temp: weatherData.hourly.temperature_2m[closestIdx],
+        code: weatherData.hourly.weather_code[closestIdx]
+    };
+}
+
+async function processTrip() {
+    const origName = document.getElementById('trip-origin').value.trim();
+    const destName = document.getElementById('trip-dest').value.trim();
+    const datetimeVal = document.getElementById('trip-datetime').value;
+    const btn = document.getElementById('btn-process-trip');
+
+    if(!origName || !destName || !datetimeVal) { alert("Te rog completează locațiile și data!"); return; }
+
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Se calculează...';
+    
+    try {
+        const origCoords = await getCoordinates(origName);
+        const destCoords = await getCoordinates(destName);
+        if(!origCoords || !destCoords) { alert("Nu am putut localiza orașele."); return; }
+
+        let durationHrs = 0;
+        let isTrainRoute = (tripMode === 'transit' && selectedTrain !== null);
+
+        if (isTrainRoute) {
+            durationHrs = selectedTrain.durationHrs;
+        } else {
+            const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
+            const speed = tripMode === 'car' ? 75 : 50;
+            durationHrs = dist / speed;
+            if(tripMode === 'transit') durationHrs += 0.5; 
+        }
+
+        const depDate = new Date(datetimeVal);
+        const arrDate = new Date(depDate.getTime() + durationHrs * 60 * 60 * 1000);
+        
+        const h = Math.floor(durationHrs);
+        const m = Math.round((durationHrs - h) * 60);
+        
+        const trainTypeText = isTrainRoute ? ` (${selectedTrain.type})` : '';
+        document.getElementById('trip-duration').innerHTML = `${h}h ${m}m <span class="text-emerald-400 font-normal">${trainTypeText}</span>`;
+        
+        const arrOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' };
+        document.getElementById('trip-arrival').textContent = arrDate.toLocaleString('ro-RO', arrOptions);
+        
+        const stationTag = document.getElementById('trip-station');
+        if (isTrainRoute) {
+            document.getElementById('trip-station-name').textContent = selectedTrain.destStation;
+            stationTag.classList.remove('hidden');
+        } else {
+            stationTag.classList.add('hidden');
+        }
+
+        document.getElementById('trip-summary').classList.remove('hidden');
+
+        const [origWeather, destWeather] = await Promise.all([
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${origCoords.latitude}&longitude=${origCoords.longitude}&hourly=temperature_2m,weather_code&timezone=auto`).then(r=>r.json()),
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${destCoords.latitude}&longitude=${destCoords.longitude}&hourly=temperature_2m,weather_code&timezone=auto`).then(r=>r.json())
+        ]);
+
+        const wOrig = getForecastAtTime(origWeather, depDate.getTime());
+        const wDest = getForecastAtTime(destWeather, arrDate.getTime());
+
+        document.getElementById('res-orig-name').textContent = origName.split(',')[0];
+        document.getElementById('res-dest-name').textContent = destName.split(',')[0];
+
+        const codeOrig = WMO_CODES[wOrig.code] || WMO_CODES[0];
+        document.getElementById('res-orig-time').textContent = depDate.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('res-orig-icon').className = `fa-solid ${codeOrig.icon} text-3xl ${codeOrig.color} drop-shadow-md mb-2`;
+        document.getElementById('res-orig-temp').textContent = formatTemp(wOrig.temp);
+        document.getElementById('res-orig-desc').textContent = codeOrig.desc;
+
+        const codeDest = WMO_CODES[wDest.code] || WMO_CODES[0];
+        document.getElementById('res-dest-time').textContent = arrDate.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('res-dest-icon').className = `fa-solid ${codeDest.icon} text-3xl ${codeDest.color} drop-shadow-md mb-2`;
+        document.getElementById('res-dest-temp').textContent = formatTemp(wDest.temp);
+        document.getElementById('res-dest-desc').textContent = codeDest.desc;
+
+        document.getElementById('trip-results').classList.remove('hidden');
+
+    } catch(e) {
+        alert("Eroare la procesare!");
+    } finally {
+        btn.innerHTML = '<i class="fa-solid fa-bolt mr-2"></i> Procesează Datele';
+    }
+}
