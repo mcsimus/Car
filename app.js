@@ -7,7 +7,6 @@ let lastWeatherData = null;
 let lastLocName = '';
 let lastCountry = '';
 
-// Sistem Temă
 function applyTheme() {
     const html = document.documentElement;
     const isDark = currentTheme === 'dark' || (currentTheme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -81,7 +80,7 @@ function updateDateTime() {
     const now = new Date();
     const optionsDate = { weekday: 'long', day: 'numeric', month: 'long' };
     let dateStr = now.toLocaleDateString('ro-RO', optionsDate);
-    const timeStr = now.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' });
+    const timeStr = now.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit', hour12: false });
     dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
     document.getElementById('current-datetime').innerHTML = `${dateStr} &bull; ${timeStr}`;
 }
@@ -89,7 +88,7 @@ setInterval(updateDateTime, 1000);
 updateDateTime();
 
 // ==========================================
-// 3. API FETCH (NOMINATIM & OPEN-METEO)
+// 3. API FETCH
 // ==========================================
 async function getCoordinates(city) {
     try {
@@ -571,7 +570,7 @@ attachAutocomplete('search-input', 'main-suggestions', (name) => { loadCity(name
 attachAutocomplete('trip-origin', 'orig-suggestions', null);
 attachAutocomplete('trip-dest', 'dest-suggestions', null);
 
-// Permite modificarea manuală a datei/orei fără a bloca selecția anterioară
+// Resetăm trenul selectat dacă utilizatorul modifică manual data sau ora din input
 document.getElementById('trip-datetime').addEventListener('input', () => {
     selectedTrain = null;
     document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
@@ -675,15 +674,14 @@ async function openTrainModal() {
                 const dep = new Date(tr.departureISO);
                 const arr = new Date(tr.arrivalISO);
                 
-                const depStr = dep.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
-                const arrStr = arr.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+                const depStr = dep.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit', hour12: false});
+                const arrStr = arr.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit', hour12: false});
                 const h = Math.floor(tr.durationHrs);
                 const m = Math.round((tr.durationHrs - h) * 60);
 
                 const trainNum = tr.trainNumber || "1582";
                 const dateFormatted = `${String(dep.getDate()).padStart(2, '0')}.${String(dep.getMonth() + 1).padStart(2, '0')}.${dep.getFullYear()}`;
                 
-                // Eliminat parametrul BranchCode pentru funcționare universală Infofer
                 const infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Tren/${trainNum}?Date=${dateFormatted}`;
 
                 html += `
@@ -705,7 +703,7 @@ async function openTrainModal() {
             });
             listContainer.innerHTML = html;
         } else {
-            listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Nu s-au găsit trenuri directe pentru data selectată.</div>';
+            listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Nu s-au găsit trenuri directe după ora selectată.</div>';
         }
     } catch (err) {
         listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Eroare la preluarea rutelor.</div>';
@@ -784,7 +782,7 @@ async function processTrip() {
         const trainTypeText = isTrainRoute ? ` (<a href="${selectedTrain.link}" target="_blank" class="underline text-sky-600 dark:text-sky-400 hover:text-sky-500">${selectedTrain.type} <i class="fa-solid fa-external-link text-xs ml-0.5"></i></a>)` : '';
         document.getElementById('trip-duration').innerHTML = `${h}h ${m}m <span class="text-emerald-600 dark:text-emerald-400 font-normal">${trainTypeText}</span>`;
         
-        const arrOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit' };
+        const arrOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit', hour12: false };
         document.getElementById('trip-arrival').textContent = arrDate.toLocaleString('ro-RO', arrOptions);
         
         const stationTag = document.getElementById('trip-station');
@@ -809,13 +807,13 @@ async function processTrip() {
         document.getElementById('res-dest-name').textContent = destName.split(',')[0];
 
         const codeOrig = WMO_CODES[wOrig.code] || WMO_CODES[0];
-        document.getElementById('res-orig-time').textContent = depDate.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('res-orig-time').textContent = depDate.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit', hour12: false});
         document.getElementById('res-orig-icon').className = `fa-solid ${codeOrig.icon} text-3xl ${codeOrig.color} drop-shadow-md mb-2`;
         document.getElementById('res-orig-temp').textContent = formatTemp(wOrig.temp);
         document.getElementById('res-orig-desc').textContent = codeOrig.desc;
 
         const codeDest = WMO_CODES[wDest.code] || WMO_CODES[0];
-        document.getElementById('res-dest-time').textContent = arrDate.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit'});
+        document.getElementById('res-dest-time').textContent = arrDate.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit', hour12: false});
         document.getElementById('res-dest-icon').className = `fa-solid ${codeDest.icon} text-3xl ${codeDest.color} drop-shadow-md mb-2`;
         document.getElementById('res-dest-temp').textContent = formatTemp(wDest.temp);
         document.getElementById('res-dest-desc').textContent = codeDest.desc;
