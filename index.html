@@ -32,7 +32,12 @@
                 <p id="current-datetime" class="text-blue-600 dark:text-blue-400 text-[11px] font-semibold tracking-wider uppercase mb-1">--</p>
                 <h1 class="text-3xl font-light text-slate-800 dark:text-white tracking-tight">Vremea <span class="font-bold">Ta</span></h1>
             </div>
-            <div class="text-right">
+            <div class="text-right flex items-center justify-end gap-1">
+                <!-- Buton Camere Web -->
+                <button onclick="openWebcamModal()" class="p-2 rounded-full hover:bg-white/40 dark:hover:bg-slate-700 transition-colors" title="Camere Web CFR">
+                    <i class="fa-solid fa-video text-slate-500 dark:text-slate-400 text-xl transition-transform duration-300"></i>
+                </button>
+                <!-- Buton Temă -->
                 <button id="btn-theme" class="p-2 rounded-full hover:bg-white/40 dark:hover:bg-slate-700 transition-colors" title="Schimbă tema">
                     <i id="theme-icon" class="fa-solid fa-circle-half-stroke text-slate-500 text-xl transition-transform duration-300"></i>
                 </button>
@@ -330,6 +335,48 @@
                 <button onclick="closeTrainModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="train-list" class="p-4 space-y-2 bg-slate-50 dark:bg-slate-900/80 max-h-64 overflow-y-auto hide-scroll"></div>
+        </div>
+    </div>
+    <!-- MODAL CAMERE WEB CFR -->
+    <div id="webcam-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-400/50 dark:bg-slate-900/90 backdrop-blur-sm transition-opacity">
+        <div class="glass-card w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 border border-sky-300 dark:border-sky-500/30 shadow-2xl overflow-hidden flex flex-col">
+            <div class="px-4 py-3 border-b border-slate-300 dark:border-slate-700 flex justify-between items-center bg-slate-100 dark:bg-slate-800/80">
+                <h3 class="text-slate-800 dark:text-white font-semibold text-sm flex items-center"><i class="fa-solid fa-video text-rose-500 dark:text-rose-400 mr-2"></i> Camere CFR în Direct</h3>
+                <button onclick="closeWebcamModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-4 space-y-2 bg-slate-50 dark:bg-slate-900/80 max-h-64 overflow-y-auto hide-scroll">
+                
+                <a href="https://cfr.ro/gari/camereweb/index.php?statie=Brasov" target="_blank" class="block bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition flex justify-between items-center text-slate-800 dark:text-white font-medium text-sm shadow-sm group">
+                    <span><i class="fa-solid fa-location-dot text-slate-400 dark:text-slate-500 mr-2 group-hover:text-sky-500 transition-colors"></i> Brașov</span>
+                    <i class="fa-solid fa-external-link text-xs text-slate-400 group-hover:text-sky-500 transition-colors"></i>
+                </a>
+                
+                <a href="https://cfr.ro/gari/camereweb/index.php?statie=BucurestiNord" target="_blank" class="block bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition flex justify-between items-center text-slate-800 dark:text-white font-medium text-sm shadow-sm group">
+                    <span><i class="fa-solid fa-location-dot text-slate-400 dark:text-slate-500 mr-2 group-hover:text-sky-500 transition-colors"></i> București Nord</span>
+                    <i class="fa-solid fa-external-link text-xs text-slate-400 group-hover:text-sky-500 transition-colors"></i>
+                </a>
+
+                <a href="https://cfr.ro/gari/camereweb/index.php?statie=ClujNapoca" target="_blank" class="block bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition flex justify-between items-center text-slate-800 dark:text-white font-medium text-sm shadow-sm group">
+                    <span><i class="fa-solid fa-location-dot text-slate-400 dark:text-slate-500 mr-2 group-hover:text-sky-500 transition-colors"></i> Cluj-Napoca</span>
+                    <i class="fa-solid fa-external-link text-xs text-slate-400 group-hover:text-sky-500 transition-colors"></i>
+                </a>
+
+                <a href="https://cfr.ro/gari/camereweb/index.php?statie=Constanta" target="_blank" class="block bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition flex justify-between items-center text-slate-800 dark:text-white font-medium text-sm shadow-sm group">
+                    <span><i class="fa-solid fa-location-dot text-slate-400 dark:text-slate-500 mr-2 group-hover:text-sky-500 transition-colors"></i> Constanța</span>
+                    <i class="fa-solid fa-external-link text-xs text-slate-400 group-hover:text-sky-500 transition-colors"></i>
+                </a>
+
+                <a href="https://cfr.ro/gari/camereweb/index.php?statie=Craiova" target="_blank" class="block bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition flex justify-between items-center text-slate-800 dark:text-white font-medium text-sm shadow-sm group">
+                    <span><i class="fa-solid fa-location-dot text-slate-400 dark:text-slate-500 mr-2 group-hover:text-sky-500 transition-colors"></i> Craiova</span>
+                    <i class="fa-solid fa-external-link text-xs text-slate-400 group-hover:text-sky-500 transition-colors"></i>
+                </a>
+
+                <a href="https://cfr.ro/gari/camereweb/index.php?statie=TimisoaraNord" target="_blank" class="block bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition flex justify-between items-center text-slate-800 dark:text-white font-medium text-sm shadow-sm group">
+                    <span><i class="fa-solid fa-location-dot text-slate-400 dark:text-slate-500 mr-2 group-hover:text-sky-500 transition-colors"></i> Timișoara Nord</span>
+                    <i class="fa-solid fa-external-link text-xs text-slate-400 group-hover:text-sky-500 transition-colors"></i>
+                </a>
+
+            </div>
         </div>
     </div>
 </body>

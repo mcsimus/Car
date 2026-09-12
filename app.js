@@ -854,3 +854,13 @@ async function processTrip() {
         btn.innerHTML = '<i class="fa-solid fa-bolt mr-2"></i> Procesează Datele';
     }
 }
+// ==========================================
+// 9. LOGICĂ CAMERE WEB CFR
+// ==========================================
+function openWebcamModal() {
+    document.getElementById('webcam-modal').classList.remove('hidden');
+}
+
+function closeWebcamModal() {
+    document.getElementById('webcam-modal').classList.add('hidden');
+}
