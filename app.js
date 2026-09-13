@@ -891,11 +891,21 @@ async function processTrip() {
         document.getElementById('trip-arrival').textContent = arrDate.toLocaleString('ro-RO', arrOptions);
         
         const stationTag = document.getElementById('trip-station');
+        
         if (isTrainRoute && !selectedTrain.isTransfer) {
-            document.getElementById('trip-station-name').textContent = selectedTrain.destStation;
-            stationTag.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(selectedTrain.destStation);
+            // Dacă este Tren direct, arătăm locația Gării
+            stationTag.innerHTML = `<i class="fa-solid fa-location-dot mr-2"></i> <span id="trip-station-name">${selectedTrain.destStation}</span>`;
+            stationTag.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedTrain.destStation)}`;
             stationTag.classList.remove('hidden');
+            
+        } else if (tripMode === 'car') {
+            // Dacă este Mașină, generăm link automat de navigare cu ruta completă!
+            stationTag.innerHTML = `<i class="fa-solid fa-route mr-2"></i> <span id="trip-station-name">Vezi traseul pe Google Maps</span>`;
+            stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${origCoords.latitude},${origCoords.longitude}&destination=${destCoords.latitude},${destCoords.longitude}&travelmode=driving`;
+            stationTag.classList.remove('hidden');
+            
         } else {
+            // Ascundem butonul în alte cazuri (ex: Transport în comun nedefinit sau tren cu legături)
             stationTag.classList.add('hidden');
         }
 
