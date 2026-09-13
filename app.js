@@ -899,9 +899,9 @@ async function processTrip() {
             stationTag.classList.remove('hidden');
             
         } else if (tripMode === 'car') {
-            // Dacă este Mașină, generăm link automat de navigare cu ruta completă!
+            // Dacă este Mașină, trimitem numele orașelor (text) în loc de coordonate GPS pentru a evita afișarea afacerilor locale
             stationTag.innerHTML = `<i class="fa-solid fa-route mr-2"></i> <span id="trip-station-name">Vezi traseul pe Google Maps</span>`;
-            stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${origCoords.latitude},${origCoords.longitude}&destination=${destCoords.latitude},${destCoords.longitude}&travelmode=driving`;
+            stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origName)}&destination=${encodeURIComponent(destName)}&travelmode=driving`;
             stationTag.classList.remove('hidden');
             
         } else {
