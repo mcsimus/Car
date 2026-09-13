@@ -176,6 +176,7 @@ function updateUI(fullData, locationName, country) {
 // ==========================================
 function updateHeaderInfo(locationName, country) {
     document.getElementById('city-name').textContent = country ? `${locationName}, ${country}` : locationName;
+    
     document.getElementById('unit-label').textContent = `°${currentUnit}`;
     const heroUnit = document.getElementById('hero-unit');
     if (heroUnit) heroUnit.textContent = `°${currentUnit}`;
@@ -191,7 +192,9 @@ function updateCurrentWeather(weather) {
     
     const codeInfo = WMO_CODES[weather.current.weather_code] || WMO_CODES[0];
     document.getElementById('current-desc').textContent = codeInfo.desc;
-    document.getElementById('current-icon').className = `fa-solid ${codeInfo.icon} text-6xl ${codeInfo.color} drop-shadow-[0_0_15px_currentColor] cursor-pointer transition-transform duration-200`;
+    
+    // Iconita din Hero animata cu group-hover de la nivelul cardului colapsabil
+    document.getElementById('current-icon').className = `fa-solid ${codeInfo.icon} text-6xl ${codeInfo.color} drop-shadow-[0_0_15px_currentColor] transition-transform duration-300 group-hover:scale-110 group-active:scale-95`;
 }
 
 function renderWeatherAnimations(code) {
@@ -251,8 +254,7 @@ function updateAQI(aqiData) {
     if(aqi > 80) { color = 'text-purple-600 dark:text-purple-500'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
     
     descEl.innerHTML = icon;
-    descEl.className = `text-xl ${color} drop-shadow-md transition-colors duration-300 cursor-pointer transition-transform duration-200`;
-    descEl.setAttribute('onclick', "event.stopPropagation(); this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);");
+    descEl.className = `text-xl ${color} drop-shadow-md transition-colors duration-300`;
 }
 
 function updateMarine(marineData) {
@@ -304,9 +306,7 @@ function drawPressureChart(weather, todayIdx) {
     document.getElementById('pressure-labels').innerHTML = labels.map((l, i) => `<div class="${i === 3 ? 'text-emerald-500 dark:text-emerald-400 font-bold scale-110' : ''}">${l}</div>`).join('');
 }
 
-// ----------------------------------------------------
-// NOUL COD: GENDERARE ECHIPAMENTE CU TOOLTIP-URI (BUBBLE)
-// ----------------------------------------------------
+// Tooltip-uri echipamente garderobă
 function getEquipmentTags(temp, code, wind, precipProb, isDay = true) {
     let tags = [];
     if (temp >= 24 && [0, 1, 2].includes(code)) {
