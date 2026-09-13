@@ -646,9 +646,14 @@ flatpickr("#trip-datetime", {
 
 function openTripModal() {
     document.getElementById('trip-modal').classList.remove('hidden');
+    
+    // Setăm data și ora curentă în calendar
     const fp = document.getElementById('trip-datetime')._flatpickr;
     if(fp) fp.setDate(new Date());
-    fillCurrentLocationTrip(); 
+    
+    // Preluăm instant locația afișată pe ecranul principal
+    const origInput = document.getElementById('trip-origin');
+    origInput.value = lastLocName || localStorage.getItem('lastCity') || '';
 }
 
 function closeTripModal() {
