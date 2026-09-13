@@ -853,10 +853,29 @@ async function processTrip() {
                 durationHrs = selectedTrain.durationHrs;
             }
         } else {
-            const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
-            const speed = tripMode === 'car' ? 75 : 50;
-            durationHrs = dist / speed;
-            if(tripMode === 'transit') durationHrs += 0.5; 
+            if (tripMode === 'car') {
+                try {
+                    // Apelăm motorul de navigație OSRM pentru ruta rutieră reală
+                    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${origCoords.longitude},${origCoords.latitude};${destCoords.longitude},${destCoords.latitude}?overview=false`;
+                    const osrmRes = await fetch(osrmUrl);
+                    const osrmData = await osrmRes.json();
+                    
+                    if (osrmData.code === "Ok" && osrmData.routes.length > 0) {
+                        // OSRM returnează durata în secunde, o transformăm în ore
+                        durationHrs = osrmData.routes[0].duration / 3600;
+                    } else {
+                        throw new Error("Ruta auto nu a putut fi calculată.");
+                    }
+                } catch (err) {
+                    // Fallback de siguranță la matematica în linie dreaptă dacă pică serverul de rute
+                    const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
+                    durationHrs = dist / 75;
+                }
+            } else {
+                // Pentru opțiunea "Comun" (Autobuze), folosim estimarea matematică + timp de așteptare
+                const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
+                durationHrs = (dist / 50) + 0.5;
+            }
         }
 
         const depDate = new Date(datetimeVal);
