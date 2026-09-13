@@ -177,8 +177,11 @@ function updateUI(fullData, locationName, country) {
 function updateHeaderInfo(locationName, country) {
     document.getElementById('city-name').textContent = country ? `${locationName}, ${country}` : locationName;
     document.getElementById('unit-label').textContent = `°${currentUnit}`;
+    
+    // NOUL COD: Schimbă unitatea și la temperatura mare din Hero
     const heroUnit = document.getElementById('hero-unit');
     if (heroUnit) heroUnit.textContent = `°${currentUnit}`;
+}
 }
 
 function updateCurrentWeather(weather) {
@@ -484,6 +487,12 @@ document.getElementById('search-form').addEventListener('submit', (e) => {
 document.getElementById('btn-unit').addEventListener('click', () => {
     currentUnit = currentUnit === 'C' ? 'F' : 'C';
     localStorage.setItem('tempUnit', currentUnit);
+    
+    // Forțăm schimbarea instantă vizuală
+    document.getElementById('unit-label').textContent = `°${currentUnit}`;
+    const heroUnit = document.getElementById('hero-unit');
+    if (heroUnit) heroUnit.textContent = `°${currentUnit}`;
+
     if (lastWeatherData) updateUI(lastWeatherData, lastLocName, lastCountry);
 });
 
@@ -508,6 +517,11 @@ document.getElementById('btn-location').addEventListener('click', () => {
 
 const savedCity = localStorage.getItem('lastCity') || 'Constanța';
 document.getElementById('unit-label').textContent = `°${currentUnit}`;
+
+// Citim preferința la încărcarea paginii și o aplicăm pe Hero
+const heroUnitInit = document.getElementById('hero-unit');
+if (heroUnitInit) heroUnitInit.textContent = `°${currentUnit}`;
+
 loadCity(savedCity);
 
 // Funcție suplimentară pentru drag & scroll perfect pe desktop
