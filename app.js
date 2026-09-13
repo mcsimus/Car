@@ -16,9 +16,9 @@ function applyTheme() {
 
     const btnIcon = document.getElementById('theme-icon');
     if(btnIcon) {
-        if(currentTheme === 'light') btnIcon.className = 'fa-solid fa-sun text-amber-500 drop-shadow-md transition-transform duration-300';
-        else if(currentTheme === 'dark') btnIcon.className = 'fa-solid fa-moon text-blue-400 drop-shadow-md transition-transform duration-300';
-        else btnIcon.className = 'fa-solid fa-circle-half-stroke text-slate-500 dark:text-slate-400 drop-shadow-md transition-transform duration-300';
+        if(currentTheme === 'light') btnIcon.className = 'fa-solid fa-sun text-amber-500 drop-shadow-md transition-transform duration-300 cursor-pointer';
+        else if(currentTheme === 'dark') btnIcon.className = 'fa-solid fa-moon text-blue-400 drop-shadow-md transition-transform duration-300 cursor-pointer';
+        else btnIcon.className = 'fa-solid fa-circle-half-stroke text-slate-500 dark:text-slate-400 drop-shadow-md transition-transform duration-300 cursor-pointer';
     }
 }
 
@@ -177,6 +177,8 @@ function updateUI(fullData, locationName, country) {
 function updateHeaderInfo(locationName, country) {
     document.getElementById('city-name').textContent = country ? `${locationName}, ${country}` : locationName;
     document.getElementById('unit-label').textContent = `°${currentUnit}`;
+    const heroUnit = document.getElementById('hero-unit');
+    if (heroUnit) heroUnit.textContent = `°${currentUnit}`;
 }
 
 function updateCurrentWeather(weather) {
@@ -189,7 +191,8 @@ function updateCurrentWeather(weather) {
     
     const codeInfo = WMO_CODES[weather.current.weather_code] || WMO_CODES[0];
     document.getElementById('current-desc').textContent = codeInfo.desc;
-    document.getElementById('current-icon').className = `fa-solid ${codeInfo.icon} text-6xl ${codeInfo.color} drop-shadow-[0_0_15px_currentColor]`;
+    // Păstrăm funcțiile de transform (tactil) pe iconița principală
+    document.getElementById('current-icon').className = `fa-solid ${codeInfo.icon} text-6xl ${codeInfo.color} drop-shadow-[0_0_15px_currentColor] cursor-pointer transition-transform duration-200`;
 }
 
 function renderWeatherAnimations(code) {
@@ -249,7 +252,8 @@ function updateAQI(aqiData) {
     if(aqi > 80) { color = 'text-purple-600 dark:text-purple-500'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
     
     descEl.innerHTML = icon;
-    descEl.className = `text-xl ${color} drop-shadow-md transition-colors duration-300`;
+    descEl.className = `text-xl ${color} drop-shadow-md transition-colors duration-300 cursor-pointer transition-transform duration-200`;
+    descEl.setAttribute('onclick', "event.stopPropagation(); this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);");
 }
 
 function updateMarine(marineData) {
@@ -379,7 +383,9 @@ function updateCarWashIndex(weather, todayIdx) {
     const statusWash = document.getElementById('car-wash-status');
     const cardWash = iconWash.closest('.glass-card');
     
-    iconWash.className = 'fa-solid fa-car-side text-2xl transition-colors duration-500';
+    iconWash.className = 'fa-solid fa-car-side text-2xl transition-colors duration-500 cursor-pointer transition-transform duration-200';
+    iconWash.setAttribute('onclick', "this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);");
+    
     cardWash.className = 'glass-card bg-white/40 dark:bg-slate-800/40 rounded-2xl p-5 border-l-4 transition-colors duration-500 shadow-md border-t border-r border-b border-slate-300 dark:border-slate-600';
 
     if (probToday > 20 || probTmrw > 20) {
@@ -406,10 +412,11 @@ function renderHourlyForecast(weather) {
         const temp = formatTemp(weather.hourly.temperature_2m[i]);
         const hCodeInfo = WMO_CODES[weather.hourly.weather_code[i]] || { icon: 'fa-circle-question', color: 'text-slate-500' };
         
+        // Adăugat 'shrink-0' pentru scroll tactil perfect și efect tactil pe iconiță
         hourlyContainer.innerHTML += `
-            <div class="bg-white/60 dark:bg-slate-900/30 rounded-xl p-3 min-w-[65px] flex flex-col items-center justify-center space-y-2 border border-slate-300 dark:border-slate-700 shadow-sm hover:bg-white/80 dark:hover:bg-slate-800/60 transition cursor-default">
+            <div class="shrink-0 bg-white/60 dark:bg-slate-900/30 rounded-xl p-3 min-w-[65px] flex flex-col items-center justify-center space-y-2 border border-slate-300 dark:border-slate-700 shadow-sm hover:bg-white/80 dark:hover:bg-slate-800/60 transition cursor-default">
                 <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">${hourStr}</div>
-                <i class="fa-solid ${hCodeInfo.icon} ${hCodeInfo.color} drop-shadow-md text-xl"></i>
+                <i class="fa-solid ${hCodeInfo.icon} ${hCodeInfo.color} drop-shadow-md text-xl cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i>
                 <div class="font-bold text-sm text-slate-800 dark:text-white">${temp}°</div>
             </div>
         `;
@@ -448,7 +455,7 @@ function renderDailyForecast(weather, todayIdx) {
                     <div class="w-16 font-semibold ${isToday ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-300'} flex items-center">
                         ${dayName} <i class="fa-solid fa-chevron-down text-[9px] ml-1.5 text-slate-400 dark:text-slate-500 chevron transition-transform duration-300"></i>
                     </div>
-                    <div class="w-8 flex justify-center"><i class="fa-solid ${dCodeInfo.icon} ${dCodeInfo.color} drop-shadow-md text-lg"></i></div>
+                    <div class="w-8 flex justify-center"><i class="fa-solid ${dCodeInfo.icon} ${dCodeInfo.color} drop-shadow-md text-lg transition-transform duration-200" onclick="event.stopPropagation(); this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i></div>
                     <div class="w-14 text-center text-[10px] text-blue-600 dark:text-blue-300 bg-blue-100/50 dark:bg-blue-900/20 rounded-md py-0.5 font-medium"><i class="fa-solid fa-droplet text-[9px] mr-1 text-blue-500 dark:text-blue-400"></i>${precipProb}%</div>
                     <div class="w-24 text-right font-bold text-slate-800 dark:text-white">${maxTemp}° <span class="text-slate-500 font-medium ml-1">/ ${minTemp}°</span></div>
                 </div>
@@ -502,6 +509,36 @@ document.getElementById('btn-location').addEventListener('click', () => {
 const savedCity = localStorage.getItem('lastCity') || 'Constanța';
 document.getElementById('unit-label').textContent = `°${currentUnit}`;
 loadCity(savedCity);
+
+// Funcție suplimentară pentru drag & scroll perfect pe desktop
+const hourlySlider = document.getElementById('hourly-container');
+if (hourlySlider) {
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    hourlySlider.addEventListener('mousedown', (e) => {
+        isDown = true;
+        hourlySlider.classList.add('cursor-grabbing');
+        startX = e.pageX - hourlySlider.offsetLeft;
+        scrollLeft = hourlySlider.scrollLeft;
+    });
+    hourlySlider.addEventListener('mouseleave', () => {
+        isDown = false;
+        hourlySlider.classList.remove('cursor-grabbing');
+    });
+    hourlySlider.addEventListener('mouseup', () => {
+        isDown = false;
+        hourlySlider.classList.remove('cursor-grabbing');
+    });
+    hourlySlider.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - hourlySlider.offsetLeft;
+        const walk = (x - startX) * 2; 
+        hourlySlider.scrollLeft = scrollLeft - walk;
+    });
+}
 
 // ==========================================
 // 7. LOGICĂ AUTOCOMPLETARE ȘI MODAL PLIMBARE
@@ -814,7 +851,7 @@ async function processTrip() {
         const stationTag = document.getElementById('trip-station');
         if (isTrainRoute && !selectedTrain.isTransfer) {
             document.getElementById('trip-station-name').textContent = selectedTrain.destStation;
-            // Integrarea Google Maps Link
+            // Integrare directă cu Google Maps la Gara de Destinație!
             stationTag.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(selectedTrain.destStation);
             stationTag.classList.remove('hidden');
         } else {

@@ -12,7 +12,6 @@
     </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     
-    <!-- Flatpickr CSS & JS pentru funcția de calendar inteligent (24h) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/ro.js"></script>
@@ -26,25 +25,23 @@
 
     <div class="max-w-md w-full space-y-4 pb-8 relative z-10">
         
-        <!-- [HDR] Header -->
+        <!-- Header -->
         <div class="pt-2 flex justify-between items-end border-b border-slate-300 dark:border-slate-600 pb-3">
             <div>
                 <p id="current-datetime" class="text-blue-600 dark:text-blue-400 text-[11px] font-semibold tracking-wider uppercase mb-1">--</p>
                 <h1 class="text-3xl font-light text-slate-800 dark:text-white tracking-tight">Vremea <span class="font-bold">Ta</span></h1>
             </div>
             <div class="text-right flex items-center justify-end gap-1">
-                <!-- Buton Camere Web -->
                 <button onclick="openWebcamModal()" class="p-2 rounded-full hover:bg-white/40 dark:hover:bg-slate-700 transition-colors" title="Camere Web CFR">
-                    <i class="fa-solid fa-video text-slate-500 dark:text-slate-400 text-xl transition-transform duration-300"></i>
+                    <i class="fa-solid fa-video text-slate-500 dark:text-slate-400 text-xl transition-transform duration-300 cursor-pointer" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i>
                 </button>
-                <!-- Buton Temă -->
                 <button id="btn-theme" class="p-2 rounded-full hover:bg-white/40 dark:hover:bg-slate-700 transition-colors" title="Schimbă tema">
-                    <i id="theme-icon" class="fa-solid fa-circle-half-stroke text-slate-500 text-xl transition-transform duration-300"></i>
+                    <i id="theme-icon" class="fa-solid fa-circle-half-stroke text-slate-500 text-xl transition-transform duration-300 cursor-pointer" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i>
                 </button>
             </div>
         </div>
 
-        <!-- [QAC] Upper Controls -->
+        <!-- Upper Controls -->
         <div class="flex gap-2">
             <button id="btn-unit" class="glass-card bg-white/40 dark:bg-slate-800/40 border border-slate-300 dark:border-slate-600 px-3 py-2.5 rounded-xl flex items-center text-sm font-medium hover:bg-white/60 dark:hover:bg-slate-700/60 transition shadow-sm shrink-0 w-16 justify-center text-slate-800 dark:text-white">
                 <i class="fa-solid fa-temperature-half text-rose-500 dark:text-rose-400 drop-shadow-md mr-1"></i> <span id="unit-label">°C</span>
@@ -57,7 +54,7 @@
             </button>
         </div>
 
-        <!-- [SRC] Search Bar Universal -->
+        <!-- Search Bar Universal -->
         <div class="relative">
             <form id="search-form" class="flex relative shadow-sm">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -69,7 +66,7 @@
             <div id="main-suggestions" class="hidden absolute top-full mt-1 left-0 right-0 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl shadow-2xl z-40 overflow-hidden divide-y divide-slate-200 dark:divide-slate-700 max-h-48 overflow-y-auto"></div>
         </div>
 
-        <!-- [HERO] Current Weather Card & Accordions -->
+        <!-- Current Weather Card (Hero) -->
         <div class="glass-card bg-white/40 dark:bg-slate-800/40 border border-slate-300 dark:border-slate-600 rounded-[1.5rem] p-6 mt-4 relative overflow-hidden">
             <div class="absolute top-0 right-0 p-6 opacity-5 pointer-events-none text-slate-900 dark:text-white">
                 <i class="fa-solid fa-map text-8xl"></i>
@@ -77,24 +74,28 @@
             <h2 id="city-name" class="text-lg font-semibold text-slate-900 dark:text-white relative z-10 tracking-wide">Se încarcă...</h2>
             
             <div class="flex items-center justify-between mt-2 relative z-10">
-                <div class="text-7xl font-bold text-slate-900 dark:text-white tracking-tighter"><span id="current-temp">--</span>°</div>
-                <i id="current-icon" class="fa-solid fa-sun text-6xl text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.3)]"></i>
+                <div class="flex items-start text-slate-900 dark:text-white tracking-tighter">
+                    <span id="current-temp" class="text-7xl font-bold leading-none">--</span>
+                    <!-- Unitatea de temperatură adaptivă adăugată aici -->
+                    <span id="hero-unit" class="text-4xl font-bold mt-1 ml-1 text-slate-600 dark:text-slate-300">°C</span>
+                </div>
+                <i id="current-icon" class="fa-solid fa-sun text-6xl text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.3)] cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i>
             </div>
             <p class="text-slate-600 dark:text-slate-300 text-sm mt-2 relative z-10 font-medium"><span id="current-desc">--</span> <span class="text-slate-500 font-normal">| resimțit ca <span id="feels-like">--</span>°</span></p>
 
             <div class="grid grid-cols-3 gap-3 mt-6 relative z-10">
                 <div class="bg-white/60 dark:bg-slate-900/40 rounded-xl p-3 text-center border border-slate-300 dark:border-slate-700 shadow-inner">
-                    <i class="fa-solid fa-wind text-cyan-500 dark:text-cyan-400 drop-shadow-sm mb-1.5 text-lg"></i>
+                    <i class="fa-solid fa-wind text-cyan-500 dark:text-cyan-400 drop-shadow-sm mb-1.5 text-lg cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i>
                     <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">Vânt</div>
                     <div class="font-semibold text-sm text-slate-800 dark:text-white"><span id="wind-speed">--</span> km/h</div>
                 </div>
                 <div class="bg-white/60 dark:bg-slate-900/40 rounded-xl p-3 text-center border border-slate-300 dark:border-slate-700 shadow-inner">
-                    <i class="fa-solid fa-droplet text-blue-500 dark:text-blue-400 drop-shadow-sm mb-1.5 text-lg"></i>
+                    <i class="fa-solid fa-droplet text-blue-500 dark:text-blue-400 drop-shadow-sm mb-1.5 text-lg cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i>
                     <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">Umiditate</div>
                     <div class="font-semibold text-sm text-slate-800 dark:text-white"><span id="humidity">--</span>%</div>
                 </div>
                 <div class="bg-white/60 dark:bg-slate-900/40 rounded-xl p-3 text-center border border-slate-300 dark:border-slate-700 shadow-inner">
-                    <i class="fa-solid fa-umbrella text-indigo-500 dark:text-indigo-400 drop-shadow-sm mb-1.5 text-lg"></i>
+                    <i class="fa-solid fa-umbrella text-indigo-500 dark:text-indigo-400 drop-shadow-sm mb-1.5 text-lg cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i>
                     <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">Precipitații</div>
                     <div class="font-semibold text-sm text-slate-800 dark:text-white"><span id="precip">--</span> mm</div>
                 </div>
@@ -106,8 +107,9 @@
                 <!-- Acordeon: Calitatea Aerului -->
                 <div class="bg-white/60 dark:bg-slate-900/40 rounded-xl border border-slate-300 dark:border-slate-700 overflow-hidden shadow-sm">
                     <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/60 transition">
-                        <span class="flex items-center"><i class="fa-solid fa-lungs mr-2 text-teal-500 dark:text-teal-400"></i> Calitatea Aerului</span>
-                        <span class="flex items-center"><span id="aqi-desc" class="mr-3 text-sm"></span><i class="fa-solid fa-chevron-down text-slate-400 chevron transition-transform duration-300"></i></span>
+                        <span class="flex items-center"><i class="fa-solid fa-lungs mr-2 text-teal-500 dark:text-teal-400 cursor-pointer transition-transform duration-200" onclick="event.stopPropagation(); this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i> Calitatea Aerului</span>
+                        <!-- Am mărit spațiul mr-8 pentru a decala mâna spre stânga -->
+                        <span class="flex items-center"><span id="aqi-desc" class="mr-8 text-sm"></span><i class="fa-solid fa-chevron-down text-slate-400 chevron transition-transform duration-300"></i></span>
                     </button>
                     <div class="hidden p-4 pt-1 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20">
                         <div class="flex items-center justify-between">
@@ -123,7 +125,7 @@
                 <!-- Acordeon: Ciclu Solar & UV -->
                 <div class="bg-white/60 dark:bg-slate-900/40 rounded-xl border border-slate-300 dark:border-slate-700 overflow-hidden shadow-sm">
                     <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/60 transition">
-                        <span class="flex items-center"><i class="fa-solid fa-sun mr-2 text-amber-500 dark:text-amber-400"></i> Soare & UV</span>
+                        <span class="flex items-center"><i class="fa-solid fa-sun mr-2 text-amber-500 dark:text-amber-400 cursor-pointer transition-transform duration-200" onclick="event.stopPropagation(); this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i> Soare & UV</span>
                         <i class="fa-solid fa-chevron-down text-slate-400 chevron transition-transform duration-300"></i>
                     </button>
                     <div class="hidden p-3 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20">
@@ -144,7 +146,7 @@
                 <!-- Acordeon: Evoluție Presiune -->
                 <div class="bg-white/60 dark:bg-slate-900/40 rounded-xl border border-slate-300 dark:border-slate-700 overflow-hidden shadow-sm">
                     <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/60 transition">
-                        <span class="flex items-center"><i class="fa-solid fa-gauge-high mr-2 text-emerald-500 dark:text-emerald-400"></i> Evoluție Presiune</span>
+                        <span class="flex items-center"><i class="fa-solid fa-gauge-high mr-2 text-emerald-500 dark:text-emerald-400 cursor-pointer transition-transform duration-200" onclick="event.stopPropagation(); this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i> Evoluție Presiune</span>
                         <span class="flex items-center"><span class="text-sm font-bold text-slate-800 dark:text-white mr-1"><span id="current-pressure">--</span></span><span class="text-[9px] text-slate-500 dark:text-slate-400 mr-3">hPa</span><i class="fa-solid fa-chevron-down text-slate-400 chevron transition-transform duration-300"></i></span>
                     </button>
                     <div class="hidden p-4 pt-3 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20">
@@ -155,10 +157,10 @@
                     </div>
                 </div>
 
-                <!-- Acordeon: Condiții Maritime (Ascuns implicit) -->
+                <!-- Acordeon: Condiții Maritime -->
                 <div id="marine-module" class="hidden bg-white/60 dark:bg-slate-900/40 rounded-xl border border-slate-300 dark:border-slate-700 overflow-hidden shadow-sm">
                     <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/60 transition">
-                        <span class="flex items-center"><i class="fa-solid fa-water mr-2 text-cyan-500 dark:text-cyan-400"></i> Condiții Maritime</span>
+                        <span class="flex items-center"><i class="fa-solid fa-water mr-2 text-cyan-500 dark:text-cyan-400 cursor-pointer transition-transform duration-200" onclick="event.stopPropagation(); this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i> Condiții Maritime</span>
                         <i class="fa-solid fa-chevron-down text-slate-400 chevron transition-transform duration-300"></i>
                     </button>
                     <div class="hidden p-3 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20">
@@ -182,10 +184,10 @@
             <!-- Butoane Navigare Autoscroll -->
             <div class="flex gap-2 mt-5 relative z-10 border-t border-slate-300/50 dark:border-slate-600/50 pt-5">
                 <button onclick="document.getElementById('hourly-section').scrollIntoView({behavior: 'smooth'})" class="flex-1 bg-sky-100/80 dark:bg-sky-900/40 border border-sky-300/50 dark:border-sky-500/30 text-sky-700 dark:text-sky-300 text-xs font-bold py-2.5 rounded-xl hover:bg-sky-200 dark:hover:bg-sky-800/60 transition flex justify-center items-center shadow-sm">
-                    <i class="fa-regular fa-clock mr-1.5 text-[10px]"></i> Sari la Ore
+                    <i class="fa-regular fa-clock mr-1.5 text-[10px]"></i> Vremea pe 24h
                 </button>
                 <button onclick="document.getElementById('daily-section').scrollIntoView({behavior: 'smooth'})" class="flex-1 bg-indigo-100/80 dark:bg-indigo-900/40 border border-indigo-300/50 dark:border-indigo-500/30 text-indigo-700 dark:text-indigo-300 text-xs font-bold py-2.5 rounded-xl hover:bg-indigo-200 dark:hover:bg-indigo-800/60 transition flex justify-center items-center shadow-sm">
-                    <i class="fa-regular fa-calendar-days mr-1.5 text-[10px]"></i> Sari la Zile
+                    <i class="fa-regular fa-calendar-days mr-1.5 text-[10px]"></i> Vremea pe 7 zile
                 </button>
             </div>
         </div>
@@ -193,7 +195,7 @@
         <!-- Asistent Garderobă -->
         <div class="glass-card bg-white/40 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-300 dark:border-slate-600 shadow-md">
             <h3 class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4 flex items-center">
-                <i class="fa-solid fa-person-walking-luggage mr-3 text-2xl text-amber-500 dark:text-amber-400 drop-shadow-sm"></i> Asistent Garderobă
+                <i class="fa-solid fa-person-walking-luggage mr-3 text-2xl text-amber-500 dark:text-amber-400 drop-shadow-sm cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i> Asistent Garderobă
             </h3>
             <div class="grid grid-cols-3 gap-2">
                 <div>
@@ -216,12 +218,12 @@
             <div class="flex items-center justify-between">
                 <div class="pr-4">
                     <h3 class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 flex items-center">
-                        <i class="fa-solid fa-droplet-slash mr-2 text-blue-500 dark:text-blue-400"></i> Index Spălare Auto
+                        <i class="fa-solid fa-droplet-slash mr-2 text-blue-500 dark:text-blue-400 cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i> Index Spălare Auto
                     </h3>
                     <p id="car-wash-status" class="text-sm font-medium text-slate-800 dark:text-white leading-tight">Se calculează...</p>
                 </div>
                 <div class="bg-white/60 dark:bg-slate-900/60 w-12 h-12 rounded-full border border-slate-300 dark:border-slate-700 shadow-inner flex items-center justify-center shrink-0">
-                    <i id="car-wash-icon" class="fa-solid fa-car-side text-xl text-slate-400 dark:text-slate-500"></i>
+                    <i id="car-wash-icon" class="fa-solid fa-car-side text-xl text-slate-400 dark:text-slate-500 cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i>
                 </div>
             </div>
             <div class="mt-4 pt-3 border-t border-slate-300 dark:border-slate-700 grid grid-cols-1 gap-1.5 text-[10px] text-slate-600 dark:text-slate-300 font-medium">
@@ -231,24 +233,24 @@
             </div>
         </div>
 
-        <!-- [HR-FC] Hourly Forecast -->
-        <div id="hourly-section" class="glass-card bg-white/40 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-300 dark:border-slate-600 scroll-mt-4">
+        <!-- Hourly Forecast -->
+        <div id="hourly-section" class="glass-card bg-white/40 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-300 dark:border-slate-600 scroll-mt-4 cursor-grab active:cursor-grabbing">
             <h3 class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4 flex items-center">
-                <i class="fa-regular fa-clock mr-2 text-sky-500 dark:text-sky-400 drop-shadow-sm"></i> Următoarele 24 de ore
+                <i class="fa-regular fa-clock mr-2 text-sky-500 dark:text-sky-400 drop-shadow-sm"></i> Vremea pe 24h
             </h3>
             <div id="hourly-container" class="flex overflow-x-auto space-x-3 hide-scroll pb-2"></div>
         </div>
 
-        <!-- [DLY-FC] 7 Days Forecast -->
+        <!-- 7 Days Forecast -->
         <div id="daily-section" class="glass-card bg-white/40 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-300 dark:border-slate-600 scroll-mt-4">
             <h3 class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4 flex items-center">
-                <i class="fa-regular fa-calendar-days mr-2 text-indigo-500 dark:text-indigo-400 drop-shadow-sm"></i> Prognoza pe 7 zile
+                <i class="fa-regular fa-calendar-days mr-2 text-indigo-500 dark:text-indigo-400 drop-shadow-sm"></i> Vremea pe 7 zile
             </h3>
             <div id="daily-container" class="space-y-2"></div>
         </div>
     </div>
 
-    <!-- [MOD-T] MODAL PLIMBARE -->
+    <!-- MODAL PLIMBARE -->
     <div id="trip-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-400/40 dark:bg-slate-900/80 backdrop-blur-md transition-opacity">
         <div class="glass-card w-full max-w-md rounded-[1.5rem] bg-white/95 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-600 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             
@@ -309,7 +311,6 @@
                     <span class="text-sm text-sky-700 dark:text-sky-200">Timp estimat: <strong id="trip-duration" class="text-sky-900 dark:text-white">--</strong></span>
                     <span class="text-sm text-slate-500 dark:text-slate-300">Sosire estimată: <span id="trip-arrival" class="text-sky-600 dark:text-sky-300 font-bold">--</span></span>
                     
-                    <!-- NOUL BUTON CU GOOGLE MAPS -->
                     <a id="trip-station" href="#" target="_blank" title="Deschide în Google Maps" class="hidden text-sm bg-sky-100 hover:bg-sky-200 dark:bg-sky-800/50 dark:hover:bg-sky-700/60 text-sky-800 dark:text-sky-100 px-3 py-1 rounded font-bold border border-sky-300 dark:border-sky-400/30 flex items-center justify-center transition shadow-sm">
                         <i class="fa-solid fa-location-dot mr-2"></i> <span id="trip-station-name">Gara Destinație</span>
                     </a>
@@ -341,26 +342,24 @@
         </div>
     </div>
 
-    <!-- [MOD-TR] MODAL TRENURI (Extins) -->
+    <!-- MODAL TRENURI -->
     <div id="train-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-400/50 dark:bg-slate-900/90 backdrop-blur-sm transition-opacity">
         <div class="glass-card w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 border border-sky-300 dark:border-sky-500/30 shadow-2xl overflow-hidden flex flex-col">
             <div class="px-4 py-3 border-b border-slate-300 dark:border-slate-700 flex justify-between items-center bg-slate-100 dark:bg-slate-800/80">
                 <h3 class="text-slate-800 dark:text-white font-semibold text-sm flex items-center"><i class="fa-solid fa-train text-sky-500 dark:text-sky-400 mr-2"></i> Mersul Trenurilor</h3>
                 <button onclick="closeTrainModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <!-- Inaltime crescuta la 60vh -->
             <div id="train-list" class="p-4 space-y-2 bg-slate-50 dark:bg-slate-900/80 max-h-[60vh] overflow-y-auto hide-scroll"></div>
         </div>
     </div>
     
-    <!-- [MOD-W] MODAL CAMERE WEB CFR (Complet expandat) -->
+    <!-- MODAL CAMERE WEB CFR -->
     <div id="webcam-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-400/50 dark:bg-slate-900/90 backdrop-blur-sm transition-opacity">
         <div class="glass-card w-full max-w-sm rounded-2xl bg-white dark:bg-slate-800 border border-sky-300 dark:border-sky-500/30 shadow-2xl overflow-hidden flex flex-col">
             <div class="px-4 py-3 border-b border-slate-300 dark:border-slate-700 flex justify-between items-center bg-slate-100 dark:bg-slate-800/80">
                 <h3 class="text-slate-800 dark:text-white font-semibold text-sm flex items-center"><i class="fa-solid fa-video text-rose-500 dark:text-rose-400 mr-2"></i> Camere CFR în Direct</h3>
                 <button onclick="closeWebcamModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <!-- Scroll scos, flexibil pentru tot continutul -->
             <div class="p-4 space-y-2 bg-slate-50 dark:bg-slate-900/80">
                 
                 <a href="https://cfr.ro/gari/camereweb/index.php?statie=Brasov" target="_blank" class="block bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition flex justify-between items-center text-slate-800 dark:text-white font-medium text-sm shadow-sm group">
