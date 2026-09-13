@@ -176,11 +176,7 @@ function updateUI(fullData, locationName, country) {
 // ==========================================
 function updateHeaderInfo(locationName, country) {
     document.getElementById('city-name').textContent = country ? `${locationName}, ${country}` : locationName;
-    
-    // Setăm label-ul din butonul mic de sus
     document.getElementById('unit-label').textContent = `°${currentUnit}`;
-    
-    // Setăm și unitatea din super-cardul Hero (textul mare)
     const heroUnit = document.getElementById('hero-unit');
     if (heroUnit) heroUnit.textContent = `°${currentUnit}`;
 }
@@ -308,21 +304,39 @@ function drawPressureChart(weather, todayIdx) {
     document.getElementById('pressure-labels').innerHTML = labels.map((l, i) => `<div class="${i === 3 ? 'text-emerald-500 dark:text-emerald-400 font-bold scale-110' : ''}">${l}</div>`).join('');
 }
 
+// ----------------------------------------------------
+// NOUL COD: GENDERARE ECHIPAMENTE CU TOOLTIP-URI (BUBBLE)
+// ----------------------------------------------------
 function getEquipmentTags(temp, code, wind, precipProb, isDay = true) {
     let tags = [];
     if (temp >= 24 && [0, 1, 2].includes(code)) {
-        if (isDay) { tags.push({ icon: '🕶️', text: 'Ochelari' }); tags.push({ icon: '🧢', text: 'Pălărie' }); }
-        tags.push({ icon: '💧', text: 'Apă' });
+        if (isDay) { 
+            tags.push({ icon: '🕶️', text: 'Ochelari', desc: 'Soare puternic, protejează-ți ochii.' }); 
+            tags.push({ icon: '🧢', text: 'Pălărie', desc: 'Risc de insolație, acoperă-ți capul.' }); 
+        }
+        tags.push({ icon: '💧', text: 'Apă', desc: 'Temperaturi ridicate, hidratează-te.' });
     }
-    if (temp < 10) tags.push({ icon: '🧥', text: 'Geacă' });
-    if ([95, 96, 99].includes(code)) tags.push({ icon: '⚡', text: 'Furtună' });
-    else if ([71, 73, 75, 77, 85, 86].includes(code)) tags.push({ icon: '🥾', text: 'Bocanci' });
-    else if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) tags.push({ icon: '☂️', text: 'Umbrelă' });
-    else if (precipProb >= 20 && precipProb < 60) tags.push({ icon: '🌂', text: 'Risc ploaie' });
-    if (wind >= 25) tags.push({ icon: '💨', text: 'Vânt' });
-    if (tags.length === 0) tags.push({ icon: '👍', text: 'Lejer' });
+    if (temp < 10) tags.push({ icon: '🧥', text: 'Geacă', desc: 'Vreme rece, îmbracă-te gros.' });
+    if ([95, 96, 99].includes(code)) tags.push({ icon: '⚡', text: 'Furtună', desc: 'Pericol fulgere, evită spațiile deschise.' });
+    else if ([71, 73, 75, 77, 85, 86].includes(code)) tags.push({ icon: '🥾', text: 'Bocanci', desc: 'Zăpadă/Lapoviță pe jos.' });
+    else if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) tags.push({ icon: '☂️', text: 'Umbrelă', desc: 'Precipitații active.' });
+    else if (precipProb >= 20 && precipProb < 60) tags.push({ icon: '🌂', text: 'Risc ploaie', desc: 'Șanse de ploaie în acest interval.' });
+    if (wind >= 25) tags.push({ icon: '💨', text: 'Vânt', desc: 'Vânt puternic, haine strânse pe corp.' });
+    if (tags.length === 0) tags.push({ icon: '👍', text: 'Lejer', desc: 'Vreme optimă, îmbracă-te normal.' });
     
-    return tags.map(t => `<span class="bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 text-[10px] text-slate-700 dark:text-slate-200 px-2 py-1.5 rounded-lg flex items-center shadow-sm cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"><span class="w-4 text-center text-sm">${t.icon}</span> <span class="ml-1 truncate">${t.text}</span></span>`).join('');
+    return tags.map(t => `
+        <div class="relative group inline-block w-full cursor-help">
+            <span class="w-full bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 text-[10px] text-slate-700 dark:text-slate-200 px-2 py-1.5 rounded-lg flex items-center shadow-sm transition-transform duration-200" onclick="this.style.transform='scale(1.1)'; setTimeout(() => this.style.transform='', 200);">
+                <span class="w-4 text-center text-sm">${t.icon}</span> 
+                <span class="ml-1 truncate border-b border-dashed border-slate-400/50">${t.text}</span>
+            </span>
+            <!-- Bubble Tooltip -->
+            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-2 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible active:opacity-100 active:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none text-center leading-tight">
+                ${t.desc}
+                <div class="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-800/95 dark:border-t-slate-950/95"></div>
+            </div>
+        </div>
+    `).join('');
 }
 
 function updateWardrobeAssistant(weather, todayIdx) {
@@ -487,7 +501,6 @@ document.getElementById('btn-unit').addEventListener('click', () => {
     currentUnit = currentUnit === 'C' ? 'F' : 'C';
     localStorage.setItem('tempUnit', currentUnit);
     
-    // Forțăm schimbarea instantă a textelor de pe ecran
     document.getElementById('unit-label').textContent = `°${currentUnit}`;
     const heroUnit = document.getElementById('hero-unit');
     if (heroUnit) heroUnit.textContent = `°${currentUnit}`;
@@ -540,7 +553,7 @@ if (hourlySlider && hourlyContainer) {
         if (!isDown) return;
         e.preventDefault();
         const x = e.pageX - hourlyContainer.offsetLeft;
-        const walk = (x - startX) * 2; // Viteza scroll-ului la tragere
+        const walk = (x - startX) * 2; 
         hourlyContainer.scrollLeft = scrollLeft - walk;
     });
 }

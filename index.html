@@ -76,7 +76,6 @@
             <div class="flex items-center justify-between mt-2 relative z-10">
                 <div class="flex items-start text-slate-900 dark:text-white tracking-tighter">
                     <span id="current-temp" class="text-7xl font-bold leading-none">--</span>
-                    <!-- Unitatea de temperatură adaptivă adăugată aici -->
                     <span id="hero-unit" class="text-4xl font-bold mt-1 ml-1 text-slate-600 dark:text-slate-300">°C</span>
                 </div>
                 <i id="current-icon" class="fa-solid fa-sun text-6xl text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.3)] cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i>
@@ -102,10 +101,10 @@
             </div>
 
             <!-- Meniuri Expandabile (Acordeon) în interiorul Hero -->
-            <div class="mt-6 space-y-2 relative z-10">
+            <div class="mt-6 space-y-2 relative z-20"> <!-- Z-index mărit pentru bulele Tooltip -->
                 
                 <!-- Acordeon: Calitatea Aerului -->
-                <div class="bg-white/60 dark:bg-slate-900/40 rounded-xl border border-slate-300 dark:border-slate-700 shadow-sm relative z-20">
+                <div class="bg-white/60 dark:bg-slate-900/40 rounded-xl border border-slate-300 dark:border-slate-700 shadow-sm relative">
                     <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/60 rounded-xl transition">
                         <span class="flex items-center"><i class="fa-solid fa-lungs mr-2 text-teal-500 dark:text-teal-400 cursor-pointer transition-transform duration-200" onclick="event.stopPropagation(); this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i> Calitatea Aerului</span>
                         <span class="flex items-center"><span id="aqi-desc"></span><i class="fa-solid fa-chevron-down ml-8 text-slate-400 chevron transition-transform duration-300"></i></span>
@@ -113,12 +112,10 @@
                     <div class="hidden p-4 pt-1 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20 rounded-b-xl">
                         <div class="flex items-center justify-between">
                             
-                            <!-- Container pentru Număr + Tooltip (Bubble) -->
+                            <!-- Tooltip AQI Principal -->
                             <div class="relative group cursor-help">
                                 <span id="aqi-val" class="text-4xl font-bold text-slate-900 dark:text-white leading-none border-b-[3px] border-dashed border-slate-400/60 dark:border-slate-500/60 pb-0.5">--</span>
-                                
-                                <!-- Bubble Tooltip -->
-                                <div class="absolute bottom-full left-0 mb-3 w-56 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-3 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none">
+                                <div class="absolute bottom-full left-0 mb-3 w-56 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-3 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible active:opacity-100 active:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none">
                                     <p class="font-bold text-xs mb-1 text-sky-400">Indicele AQI</p>
                                     <p class="mb-2 text-slate-300 leading-tight">Nota generală a poluării. Mai mic = aer mai curat.</p>
                                     <div class="space-y-1.5 font-medium">
@@ -128,61 +125,118 @@
                                         <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-rose-500 mr-2 shadow-[0_0_5px_#f43f5e]"></span> 61-80: Slab</div>
                                         <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-purple-500 mr-2 shadow-[0_0_5px_#a855f7]"></span> Peste 80: Foarte slab</div>
                                     </div>
-                                    <!-- Săgeata tooltip-ului spre jos -->
                                     <div class="absolute top-full left-4 border-[6px] border-transparent border-t-slate-800/95 dark:border-t-slate-950/95"></div>
                                 </div>
                             </div>
 
                             <div class="flex space-x-2 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                                <span class="bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600">PM2.5: <span id="aqi-pm25" class="text-slate-900 dark:text-white font-bold">--</span></span>
-                                <span class="bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600">PM10: <span id="aqi-pm10" class="text-slate-900 dark:text-white font-bold">--</span></span>
+                                <!-- Tooltip PM 2.5 -->
+                                <div class="relative group cursor-help">
+                                    <span class="bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 block border-b-2 border-dashed border-b-slate-400/50">PM2.5: <span id="aqi-pm25" class="text-slate-900 dark:text-white font-bold">--</span></span>
+                                    <div class="absolute bottom-full right-0 mb-2 w-48 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-2 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible active:opacity-100 active:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none text-center leading-tight">
+                                        Particule fine periculoase (sub 2.5 microni) din fum, noxe și industrie. Intră direct în fluxul sanguin.
+                                        <div class="absolute top-full right-6 border-[5px] border-transparent border-t-slate-800/95 dark:border-t-slate-950/95"></div>
+                                    </div>
+                                </div>
+                                <!-- Tooltip PM 10 -->
+                                <div class="relative group cursor-help">
+                                    <span class="bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 block border-b-2 border-dashed border-b-slate-400/50">PM10: <span id="aqi-pm10" class="text-slate-900 dark:text-white font-bold">--</span></span>
+                                    <div class="absolute bottom-full right-0 mb-2 w-48 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-2 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible active:opacity-100 active:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none text-center leading-tight">
+                                        Particule de praf, polen și reziduuri (sub 10 microni). Irită ochii și căile respiratorii superioare.
+                                        <div class="absolute top-full right-6 border-[5px] border-transparent border-t-slate-800/95 dark:border-t-slate-950/95"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Acordeon: Ciclu Solar & UV -->
-                <div class="bg-white/60 dark:bg-slate-900/40 rounded-xl border border-slate-300 dark:border-slate-700 overflow-hidden shadow-sm">
-                    <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/60 transition">
+                <div class="bg-white/60 dark:bg-slate-900/40 rounded-xl border border-slate-300 dark:border-slate-700 shadow-sm relative z-10">
+                    <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/60 rounded-xl transition">
                         <span class="flex items-center"><i class="fa-solid fa-sun mr-2 text-amber-500 dark:text-amber-400 cursor-pointer transition-transform duration-200" onclick="event.stopPropagation(); this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i> Soare & UV</span>
                         <i class="fa-solid fa-chevron-down text-slate-400 chevron transition-transform duration-300"></i>
                     </button>
-                    <div class="hidden p-3 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20">
+                    <div class="hidden p-3 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20 rounded-b-xl">
                         <div class="grid grid-cols-2 gap-3">
-                            <div class="flex justify-between items-center text-sm font-semibold text-slate-800 dark:text-white bg-white/60 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-600">
-                                <div><i class="fa-solid fa-arrow-up text-orange-500 dark:text-orange-400 mr-1.5 text-[10px]"></i><span id="sunrise-time">--:--</span></div>
-                                <div><i class="fa-solid fa-arrow-down text-indigo-500 dark:text-indigo-400 mr-1.5 text-[10px]"></i><span id="sunset-time">--:--</span></div>
+                            <!-- Tooltip Răsărit/Apus -->
+                            <div class="relative group cursor-help">
+                                <div class="flex justify-between items-center text-sm font-semibold text-slate-800 dark:text-white bg-white/60 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 border-b-2 border-dashed border-b-slate-400/50">
+                                    <div><i class="fa-solid fa-arrow-up text-orange-500 dark:text-orange-400 mr-1.5 text-[10px]"></i><span id="sunrise-time">--:--</span></div>
+                                    <div><i class="fa-solid fa-arrow-down text-indigo-500 dark:text-indigo-400 mr-1.5 text-[10px]"></i><span id="sunset-time">--:--</span></div>
+                                </div>
+                                <div class="absolute bottom-full left-0 mb-2 w-48 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-2 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible active:opacity-100 active:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none text-center leading-tight">
+                                    Afișează ora locală exactă la care soarele răsare (stânga) și ora la care apune (dreapta) în locația selectată.
+                                    <div class="absolute top-full left-6 border-[5px] border-transparent border-t-slate-800/95 dark:border-t-slate-950/95"></div>
+                                </div>
                             </div>
-                            <div class="flex justify-center items-center space-x-2 text-sm font-semibold text-slate-800 dark:text-white bg-white/60 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-600">
-                                <i class="fa-solid fa-glasses text-purple-500 dark:text-purple-400"></i>
-                                <span id="uv-val" class="font-bold text-slate-900 dark:text-white">--</span>
-                                <span id="uv-desc" class="text-xs font-medium text-slate-600 dark:text-slate-400">--</span>
+                            
+                            <!-- Tooltip UV Index -->
+                            <div class="relative group cursor-help">
+                                <div class="flex justify-center items-center space-x-2 text-sm font-semibold text-slate-800 dark:text-white bg-white/60 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 border-b-2 border-dashed border-b-slate-400/50">
+                                    <i class="fa-solid fa-glasses text-purple-500 dark:text-purple-400"></i>
+                                    <span id="uv-val" class="font-bold text-slate-900 dark:text-white">--</span>
+                                    <span id="uv-desc" class="text-xs font-medium text-slate-600 dark:text-slate-400">--</span>
+                                </div>
+                                <div class="absolute bottom-full right-0 mb-2 w-48 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-2 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible active:opacity-100 active:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none text-center leading-tight">
+                                    <strong class="text-purple-300">Intensitatea razelor solare.</strong><br>
+                                    0-2: Sigur. Fără protecție.<br>
+                                    3-5: Moderat. Pălărie necesară.<br>
+                                    6-7: Ridicat. Aplică cremă SPF 30+.<br>
+                                    8+: Periculos. Evită soarele 11-16.
+                                    <div class="absolute top-full right-6 border-[5px] border-transparent border-t-slate-800/95 dark:border-t-slate-950/95"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Acordeon: Evoluție Presiune -->
-                <div class="bg-white/60 dark:bg-slate-900/40 rounded-xl border border-slate-300 dark:border-slate-700 overflow-hidden shadow-sm">
-                    <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/60 transition">
+                <div class="bg-white/60 dark:bg-slate-900/40 rounded-xl border border-slate-300 dark:border-slate-700 shadow-sm relative">
+                    <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/60 rounded-xl transition">
                         <span class="flex items-center"><i class="fa-solid fa-gauge-high mr-2 text-emerald-500 dark:text-emerald-400 cursor-pointer transition-transform duration-200" onclick="event.stopPropagation(); this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i> Evoluție Presiune</span>
-                        <span class="flex items-center"><span class="text-sm font-bold text-slate-800 dark:text-white mr-1"><span id="current-pressure">--</span></span><span class="text-[9px] text-slate-500 dark:text-slate-400 mr-3">hPa</span><i class="fa-solid fa-chevron-down text-slate-400 chevron transition-transform duration-300"></i></span>
+                        
+                        <!-- Tooltip Presiune Actuală (pe buton) -->
+                        <span class="flex items-center relative group cursor-help">
+                            <span class="text-sm font-bold text-slate-800 dark:text-white mr-1 border-b-[2px] border-dashed border-slate-400/60 pb-0.5"><span id="current-pressure">--</span></span>
+                            <span class="text-[9px] text-slate-500 dark:text-slate-400 mr-3">hPa</span>
+                            
+                            <div class="absolute top-full right-6 mt-2 w-48 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-2 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible active:opacity-100 active:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none text-center leading-tight">
+                                Presiunea atmosferică la sol.<br>
+                                <span class="text-emerald-400">> 1013 hPa:</span> Vreme stabilă, senină.<br>
+                                <span class="text-rose-400">< 1013 hPa:</span> Vreme instabilă, înnorări sau ploaie.
+                                <div class="absolute bottom-full right-4 border-[5px] border-transparent border-b-slate-800/95 dark:border-b-slate-950/95"></div>
+                            </div>
+                            
+                            <i class="fa-solid fa-chevron-down text-slate-400 chevron transition-transform duration-300"></i>
+                        </span>
                     </button>
-                    <div class="hidden p-4 pt-3 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20">
-                        <div class="relative h-14 w-full px-2">
+                    <div class="hidden p-4 pt-3 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20 rounded-b-xl">
+                        
+                        <!-- Tooltip Grafic -->
+                        <div class="relative h-14 w-full px-2 group cursor-help">
                             <svg id="pressure-svg" class="w-full h-full overflow-visible"></svg>
+                            <div class="absolute -top-2 right-0 text-slate-400 dark:text-slate-500"><i class="fa-solid fa-circle-info text-[10px]"></i></div>
+                            
+                            <div class="absolute bottom-full right-0 mb-1 w-64 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-2 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible active:opacity-100 active:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none text-center leading-tight">
+                                Tendința presiunii dictează starea vremii:<br>
+                                • <strong class="text-rose-400">Scădere bruscă:</strong> Se apropie furtuni, vânt intens, precipitații.<br>
+                                • <strong class="text-emerald-400">Creștere:</strong> Vremea se îndreaptă, cerul se va însenina.
+                                <div class="absolute top-full right-1 border-[5px] border-transparent border-t-slate-800/95 dark:border-t-slate-950/95"></div>
+                            </div>
                         </div>
+                        
                         <div id="pressure-labels" class="flex justify-between text-[9px] text-slate-500 dark:text-slate-400 mt-3 font-medium uppercase px-1"></div>
                     </div>
                 </div>
 
                 <!-- Acordeon: Condiții Maritime -->
-                <div id="marine-module" class="hidden bg-white/60 dark:bg-slate-900/40 rounded-xl border border-slate-300 dark:border-slate-700 overflow-hidden shadow-sm">
-                    <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/60 transition">
+                <div id="marine-module" class="hidden bg-white/60 dark:bg-slate-900/40 rounded-xl border border-slate-300 dark:border-slate-700 shadow-sm relative">
+                    <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/60 rounded-xl transition">
                         <span class="flex items-center"><i class="fa-solid fa-water mr-2 text-cyan-500 dark:text-cyan-400 cursor-pointer transition-transform duration-200" onclick="event.stopPropagation(); this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i> Condiții Maritime</span>
                         <i class="fa-solid fa-chevron-down text-slate-400 chevron transition-transform duration-300"></i>
                     </button>
-                    <div class="hidden p-3 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20">
+                    <div class="hidden p-3 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20 rounded-b-xl">
                         <div class="grid grid-cols-2 gap-3">
                             <div class="flex flex-col items-center bg-white/60 dark:bg-slate-800/60 p-2 rounded-xl text-center border border-slate-200 dark:border-slate-600">
                                 <i class="fa-solid fa-water text-xl text-blue-500 dark:text-blue-400 mb-1 opacity-90"></i>
@@ -212,10 +266,22 @@
         </div>
 
         <!-- Asistent Garderobă -->
-        <div class="glass-card bg-white/40 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-300 dark:border-slate-600 shadow-md">
-            <h3 class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-4 flex items-center">
+        <div class="glass-card bg-white/40 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-300 dark:border-slate-600 shadow-md relative z-20">
+            
+            <!-- Tooltip Titlu Garderobă -->
+            <h3 class="relative group cursor-help inline-flex items-center text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b-[2px] border-dashed border-slate-400/50 pb-0.5 mb-4">
                 <i class="fa-solid fa-person-walking-luggage mr-3 text-2xl text-amber-500 dark:text-amber-400 drop-shadow-sm cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i> Asistent Garderobă
+                
+                <div class="absolute bottom-full left-0 mb-3 w-64 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-3 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible active:opacity-100 active:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none normal-case tracking-normal">
+                    <p class="font-bold text-xs mb-1 text-amber-400">Recomandări de Echipament</p>
+                    Algoritmul analizează vremea exactă (soare, ploaie, vânt, ninsori) și îți sugerează cum să te pregătești pentru fiecare moment al zilei. <br><br>
+                    <span class="text-sky-300 italic">Acum:</span> Ora curentă.<br>
+                    <span class="text-sky-300 italic">Mai târziu:</span> Vârful extrem din următoarele 8 ore.<br>
+                    <span class="text-sky-300 italic">Mâine:</span> Vârful extrem de mâine pe timpul zilei.
+                    <div class="absolute top-full left-8 border-[6px] border-transparent border-t-slate-800/95 dark:border-t-slate-950/95"></div>
+                </div>
             </h3>
+
             <div class="grid grid-cols-3 gap-2">
                 <div>
                     <p class="text-[10px] font-semibold text-slate-600 dark:text-slate-200 mb-2 flex items-center"><i class="fa-solid fa-location-dot text-[9px] text-rose-500 dark:text-rose-400 mr-1.5"></i> Acum</p>
