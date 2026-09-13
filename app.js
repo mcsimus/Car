@@ -176,12 +176,13 @@ function updateUI(fullData, locationName, country) {
 // ==========================================
 function updateHeaderInfo(locationName, country) {
     document.getElementById('city-name').textContent = country ? `${locationName}, ${country}` : locationName;
+    
+    // Setăm label-ul din butonul mic de sus
     document.getElementById('unit-label').textContent = `°${currentUnit}`;
     
-    // NOUL COD: Schimbă unitatea și la temperatura mare din Hero
+    // Setăm și unitatea din super-cardul Hero (textul mare)
     const heroUnit = document.getElementById('hero-unit');
     if (heroUnit) heroUnit.textContent = `°${currentUnit}`;
-}
 }
 
 function updateCurrentWeather(weather) {
@@ -194,7 +195,6 @@ function updateCurrentWeather(weather) {
     
     const codeInfo = WMO_CODES[weather.current.weather_code] || WMO_CODES[0];
     document.getElementById('current-desc').textContent = codeInfo.desc;
-    // Păstrăm funcțiile de transform (tactil) pe iconița principală
     document.getElementById('current-icon').className = `fa-solid ${codeInfo.icon} text-6xl ${codeInfo.color} drop-shadow-[0_0_15px_currentColor] cursor-pointer transition-transform duration-200`;
 }
 
@@ -415,7 +415,6 @@ function renderHourlyForecast(weather) {
         const temp = formatTemp(weather.hourly.temperature_2m[i]);
         const hCodeInfo = WMO_CODES[weather.hourly.weather_code[i]] || { icon: 'fa-circle-question', color: 'text-slate-500' };
         
-        // Adăugat 'shrink-0' pentru scroll tactil perfect și efect tactil pe iconiță
         hourlyContainer.innerHTML += `
             <div class="shrink-0 bg-white/60 dark:bg-slate-900/30 rounded-xl p-3 min-w-[65px] flex flex-col items-center justify-center space-y-2 border border-slate-300 dark:border-slate-700 shadow-sm hover:bg-white/80 dark:hover:bg-slate-800/60 transition cursor-default">
                 <div class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">${hourStr}</div>
@@ -488,7 +487,7 @@ document.getElementById('btn-unit').addEventListener('click', () => {
     currentUnit = currentUnit === 'C' ? 'F' : 'C';
     localStorage.setItem('tempUnit', currentUnit);
     
-    // Forțăm schimbarea instantă vizuală
+    // Forțăm schimbarea instantă a textelor de pe ecran
     document.getElementById('unit-label').textContent = `°${currentUnit}`;
     const heroUnit = document.getElementById('hero-unit');
     if (heroUnit) heroUnit.textContent = `°${currentUnit}`;
@@ -515,42 +514,34 @@ document.getElementById('btn-location').addEventListener('click', () => {
     }
 });
 
-const savedCity = localStorage.getItem('lastCity') || 'Constanța';
-document.getElementById('unit-label').textContent = `°${currentUnit}`;
-
-// Citim preferința la încărcarea paginii și o aplicăm pe Hero
-const heroUnitInit = document.getElementById('hero-unit');
-if (heroUnitInit) heroUnitInit.textContent = `°${currentUnit}`;
-
-loadCity(savedCity);
-
-// Funcție suplimentară pentru drag & scroll perfect pe desktop
-const hourlySlider = document.getElementById('hourly-container');
-if (hourlySlider) {
+// Drag & Scroll pentru containerul de ore
+const hourlySlider = document.getElementById('hourly-section');
+const hourlyContainer = document.getElementById('hourly-container');
+if (hourlySlider && hourlyContainer) {
     let isDown = false;
     let startX;
     let scrollLeft;
 
     hourlySlider.addEventListener('mousedown', (e) => {
         isDown = true;
-        hourlySlider.classList.add('cursor-grabbing');
-        startX = e.pageX - hourlySlider.offsetLeft;
-        scrollLeft = hourlySlider.scrollLeft;
+        hourlySlider.classList.add('active:cursor-grabbing');
+        startX = e.pageX - hourlyContainer.offsetLeft;
+        scrollLeft = hourlyContainer.scrollLeft;
     });
     hourlySlider.addEventListener('mouseleave', () => {
         isDown = false;
-        hourlySlider.classList.remove('cursor-grabbing');
+        hourlySlider.classList.remove('active:cursor-grabbing');
     });
     hourlySlider.addEventListener('mouseup', () => {
         isDown = false;
-        hourlySlider.classList.remove('cursor-grabbing');
+        hourlySlider.classList.remove('active:cursor-grabbing');
     });
     hourlySlider.addEventListener('mousemove', (e) => {
         if (!isDown) return;
         e.preventDefault();
-        const x = e.pageX - hourlySlider.offsetLeft;
-        const walk = (x - startX) * 2; 
-        hourlySlider.scrollLeft = scrollLeft - walk;
+        const x = e.pageX - hourlyContainer.offsetLeft;
+        const walk = (x - startX) * 2; // Viteza scroll-ului la tragere
+        hourlyContainer.scrollLeft = scrollLeft - walk;
     });
 }
 
@@ -865,7 +856,6 @@ async function processTrip() {
         const stationTag = document.getElementById('trip-station');
         if (isTrainRoute && !selectedTrain.isTransfer) {
             document.getElementById('trip-station-name').textContent = selectedTrain.destStation;
-            // Integrare directă cu Google Maps la Gara de Destinație!
             stationTag.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(selectedTrain.destStation);
             stationTag.classList.remove('hidden');
         } else {
@@ -905,6 +895,7 @@ async function processTrip() {
         btn.innerHTML = '<i class="fa-solid fa-bolt mr-2"></i> Procesează Datele';
     }
 }
+
 // ==========================================
 // 9. LOGICĂ CAMERE WEB CFR
 // ==========================================
@@ -915,3 +906,12 @@ function openWebcamModal() {
 function closeWebcamModal() {
     document.getElementById('webcam-modal').classList.add('hidden');
 }
+
+// ==========================================
+// 10. INITIALIZARE LA INCARCAREA PAGINII
+// ==========================================
+const savedCity = localStorage.getItem('lastCity') || 'Constanța';
+document.getElementById('unit-label').textContent = `°${currentUnit}`;
+const heroUnitInit = document.getElementById('hero-unit');
+if (heroUnitInit) heroUnitInit.textContent = `°${currentUnit}`;
+loadCity(savedCity);
