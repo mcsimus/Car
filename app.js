@@ -233,7 +233,7 @@ function updateAQI(aqiData) {
     const descEl = document.getElementById('aqi-desc');
     if(!aqiData || !aqiData.current) {
         valEl.textContent = '--'; 
-        descEl.innerHTML = '<i class="fa-solid fa-circle-question"></i>'; 
+        descEl.innerHTML = ''; 
         return;
     }
     const aqi = aqiData.current.european_aqi;
@@ -692,11 +692,9 @@ async function openTrainModal() {
                 const isTransfer = tr.isTransfer === true;
                 let infoferLink = "";
                 
-                // NOUL COD: Formare automată URL complet Itinerarii Infofer cu parametri exacți
                 if(isTransfer) {
                     const cleanOrig = origName.split(',')[0].trim();
                     const cleanDest = destName.split(',')[0].trim();
-                    // Extragem minutele scurse de la miezul nopții pentru a trimite exact ora selectată
                     const minsInDay = dep.getHours() * 60 + dep.getMinutes();
                     
                     infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Itineraries?DepartureStationName=${encodeURIComponent(cleanOrig)}&ArrivalStationName=${encodeURIComponent(cleanDest)}&DepartureDate=${dateFormatted}&TimeSelectionId=0&MinutesInDay=${minsInDay}&OrderingTypeId=0&ConnectionsTypeId=1&BetweenTrainsMinimumMinutes=&ChangeStationName=`;
@@ -816,6 +814,8 @@ async function processTrip() {
         const stationTag = document.getElementById('trip-station');
         if (isTrainRoute && !selectedTrain.isTransfer) {
             document.getElementById('trip-station-name').textContent = selectedTrain.destStation;
+            // Integrarea Google Maps Link
+            stationTag.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(selectedTrain.destStation);
             stationTag.classList.remove('hidden');
         } else {
             stationTag.classList.add('hidden');
