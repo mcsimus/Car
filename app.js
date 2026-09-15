@@ -192,8 +192,6 @@ function updateCurrentWeather(weather) {
     
     const codeInfo = WMO_CODES[weather.current.weather_code] || WMO_CODES[0];
     document.getElementById('current-desc').textContent = codeInfo.desc;
-    
-    // Iconita din Hero animata cu group-hover de la nivelul cardului colapsabil
     document.getElementById('current-icon').className = `fa-solid ${codeInfo.icon} text-6xl ${codeInfo.color} drop-shadow-[0_0_15px_currentColor] transition-transform duration-300 group-hover:scale-110 group-active:scale-95`;
 }
 
@@ -254,7 +252,8 @@ function updateAQI(aqiData) {
     if(aqi > 80) { color = 'text-purple-600 dark:text-purple-500'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
     
     descEl.innerHTML = icon;
-    descEl.className = `text-xl ${color} drop-shadow-md transition-colors duration-300`;
+    descEl.className = `text-xl ${color} drop-shadow-md transition-colors duration-300 cursor-pointer transition-transform duration-200`;
+    descEl.setAttribute('onclick', "event.stopPropagation(); this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);");
 }
 
 function updateMarine(marineData) {
@@ -306,7 +305,6 @@ function drawPressureChart(weather, todayIdx) {
     document.getElementById('pressure-labels').innerHTML = labels.map((l, i) => `<div class="${i === 3 ? 'text-emerald-500 dark:text-emerald-400 font-bold scale-110' : ''}">${l}</div>`).join('');
 }
 
-// Tooltip-uri echipamente garderobă
 function getEquipmentTags(temp, code, wind, precipProb, isDay = true) {
     let tags = [];
     if (temp >= 24 && [0, 1, 2].includes(code)) {
@@ -330,7 +328,6 @@ function getEquipmentTags(temp, code, wind, precipProb, isDay = true) {
                 <span class="w-4 text-center text-sm">${t.icon}</span> 
                 <span class="ml-1 truncate border-b border-dashed border-slate-400/50">${t.text}</span>
             </span>
-            <!-- Bubble Tooltip -->
             <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-2 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible active:opacity-100 active:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none text-center leading-tight">
                 ${t.desc}
                 <div class="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-800/95 dark:border-t-slate-950/95"></div>
@@ -527,7 +524,6 @@ document.getElementById('btn-location').addEventListener('click', () => {
     }
 });
 
-// Drag & Scroll pentru containerul de ore
 const hourlySlider = document.getElementById('hourly-section');
 const hourlyContainer = document.getElementById('hourly-container');
 if (hourlySlider && hourlyContainer) {
@@ -646,12 +642,9 @@ flatpickr("#trip-datetime", {
 
 function openTripModal() {
     document.getElementById('trip-modal').classList.remove('hidden');
-    
-    // Setăm data și ora curentă în calendar
     const fp = document.getElementById('trip-datetime')._flatpickr;
     if(fp) fp.setDate(new Date());
     
-    // Preluăm instant locația afișată pe ecranul principal
     const origInput = document.getElementById('trip-origin');
     origInput.value = lastLocName || localStorage.getItem('lastCity') || '';
 }
@@ -735,6 +728,10 @@ async function openTrainModal() {
         const res = await fetch(workerUrl);
         const data = await res.json();
 
+        // Extragem numele oficiale din Worker (dacă sunt disponibile), altfel facem fallback pe ce a introdus userul
+        const exactOrig = data.exactOrigin || origName.split(',')[0];
+        const exactDest = data.exactDest || destName.split(',')[0];
+
         if (data.trains && data.trains.length > 0) {
             let html = '';
             data.trains.forEach((tr) => {
@@ -753,11 +750,9 @@ async function openTrainModal() {
                 let infoferLink = "";
                 
                 if(isTransfer) {
-                    const cleanOrig = origName.split(',')[0].trim();
-                    const cleanDest = destName.split(',')[0].trim();
                     const minsInDay = dep.getHours() * 60 + dep.getMinutes();
-                    
-                    infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Itineraries?DepartureStationName=${encodeURIComponent(cleanOrig)}&ArrivalStationName=${encodeURIComponent(cleanDest)}&DepartureDate=${dateFormatted}&TimeSelectionId=0&MinutesInDay=${minsInDay}&OrderingTypeId=0&ConnectionsTypeId=1&BetweenTrainsMinimumMinutes=&ChangeStationName=`;
+                    // Infofer cere numele exact al gărilor oficiale pentru linkul de rute cu legături
+                    infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Itineraries?DepartureStationName=${encodeURIComponent(exactOrig)}&ArrivalStationName=${encodeURIComponent(exactDest)}&DepartureDate=${dateFormatted}&TimeSelectionId=0&MinutesInDay=${minsInDay}&OrderingTypeId=0&ConnectionsTypeId=1&BetweenTrainsMinimumMinutes=&ChangeStationName=`;
                 } else {
                     infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Tren/${trainNum}?Date=${dateFormatted}`;
                 }
@@ -766,7 +761,7 @@ async function openTrainModal() {
 
                 html += `
                     <div class="bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-300 dark:border-slate-600 hover:border-sky-400 dark:hover:border-sky-500/50 transition flex justify-between items-center cursor-pointer" 
-                         onclick="selectCfrTrain('${tr.type}', '${tr.departureISO}', ${tr.durationHrs}, '${destName.replace(/'/g, "\\'")}', '${infoferLink}', ${isTransfer})">
+                         onclick="selectCfrTrain('${tr.type}', '${tr.departureISO}', ${tr.durationHrs}, '${exactOrig.replace(/'/g, "\\'")}', '${exactDest.replace(/'/g, "\\'")}', '${infoferLink}', ${isTransfer})">
                         <div>
                             <div class="${tr.color} font-bold text-sm mb-1"><i class="fa-solid ${iconClass} mr-1"></i> ${tr.type}</div>
                             <div class="text-[10px] text-slate-500 dark:text-slate-300 uppercase tracking-wide">
@@ -794,20 +789,22 @@ function closeTrainModal() {
     document.getElementById('train-modal').classList.add('hidden');
 }
 
-function selectCfrTrain(type, depIso, durationHrs, destCity, infoferLink, isTransfer) {
+// Funcție actualizată să primească și exactOrig și exactDest
+function selectCfrTrain(type, depIso, durationHrs, exactOrig, exactDest, infoferLink, isTransfer) {
     const d = new Date(depIso);
     const fp = document.getElementById('trip-datetime')._flatpickr;
     if(fp) fp.setDate(d);
     
-    let station = "Gara " + destCity;
-    const cityLow = destCity.toLowerCase();
-    if (cityLow.includes('bucure')) station = "București Nord";
-    else if (cityLow.includes('timi')) station = "Timișoara Nord";
-    else if (cityLow.includes('cluj')) station = "Cluj-Napoca";
-    else if (cityLow.includes('iasi') || cityLow.includes('iași')) station = "Iași";
-    else if (cityLow.includes('constan')) station = "Constanța";
+    // Salvăm numele oficiale direct din baza de date
+    selectedTrain = { 
+        type: type, 
+        durationHrs: durationHrs, 
+        origStation: exactOrig, 
+        destStation: exactDest, 
+        link: infoferLink, 
+        isTransfer: isTransfer 
+    };
     
-    selectedTrain = { type: type, durationHrs: durationHrs, destStation: station, link: infoferLink, isTransfer: isTransfer };
     closeTrainModal();
     document.getElementById('btn-train-cfr').classList.add('ring-2', 'ring-emerald-400');
 }
@@ -855,24 +852,20 @@ async function processTrip() {
         } else {
             if (tripMode === 'car') {
                 try {
-                    // Apelăm motorul de navigație OSRM pentru ruta rutieră reală
                     const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${origCoords.longitude},${origCoords.latitude};${destCoords.longitude},${destCoords.latitude}?overview=false`;
                     const osrmRes = await fetch(osrmUrl);
                     const osrmData = await osrmRes.json();
                     
                     if (osrmData.code === "Ok" && osrmData.routes.length > 0) {
-                        // OSRM returnează durata în secunde, o transformăm în ore
                         durationHrs = osrmData.routes[0].duration / 3600;
                     } else {
                         throw new Error("Ruta auto nu a putut fi calculată.");
                     }
                 } catch (err) {
-                    // Fallback de siguranță la matematica în linie dreaptă dacă pică serverul de rute
                     const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
                     durationHrs = dist / 75;
                 }
             } else {
-                // Pentru opțiunea "Comun" (Autobuze), folosim estimarea matematică + timp de așteptare
                 const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
                 durationHrs = (dist / 50) + 0.5;
             }
@@ -893,19 +886,14 @@ async function processTrip() {
         const stationTag = document.getElementById('trip-station');
         
         if (isTrainRoute && !selectedTrain.isTransfer) {
-            // Dacă este Tren direct, arătăm locația Gării
             stationTag.innerHTML = `<i class="fa-solid fa-location-dot mr-2"></i> <span id="trip-station-name">${selectedTrain.destStation}</span>`;
             stationTag.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedTrain.destStation)}`;
             stationTag.classList.remove('hidden');
-            
         } else if (tripMode === 'car') {
-            // Dacă este Mașină, trimitem numele orașelor (text) în loc de coordonate GPS pentru a evita afișarea afacerilor locale
             stationTag.innerHTML = `<i class="fa-solid fa-route mr-2"></i> <span id="trip-station-name">Vezi traseul pe Google Maps</span>`;
             stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origName)}&destination=${encodeURIComponent(destName)}&travelmode=driving`;
             stationTag.classList.remove('hidden');
-            
         } else {
-            // Ascundem butonul în alte cazuri (ex: Transport în comun nedefinit sau tren cu legături)
             stationTag.classList.add('hidden');
         }
 
@@ -919,8 +907,9 @@ async function processTrip() {
         const wOrig = getForecastAtTime(origWeather, depDate.getTime());
         const wDest = getForecastAtTime(destWeather, arrDate.getTime());
 
-        document.getElementById('res-orig-name').textContent = origName.split(',')[0];
-        document.getElementById('res-dest-name').textContent = destName.split(',')[0];
+        // Dacă avem rută de tren, folosim numele oficiale. Altfel, numele tastat.
+        document.getElementById('res-orig-name').textContent = (isTrainRoute && selectedTrain && selectedTrain.origStation) ? selectedTrain.origStation : origName.split(',')[0];
+        document.getElementById('res-dest-name').textContent = (isTrainRoute && selectedTrain && selectedTrain.destStation) ? selectedTrain.destStation : destName.split(',')[0];
 
         const codeOrig = WMO_CODES[wOrig.code] || WMO_CODES[0];
         document.getElementById('res-orig-time').textContent = depDate.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit', hour12: false});
