@@ -885,14 +885,22 @@ async function processTrip() {
         
         const stationTag = document.getElementById('trip-station');
         
-        if (isTrainRoute && !selectedTrain.isTransfer) {
-            stationTag.innerHTML = `<i class="fa-solid fa-location-dot mr-2"></i> <span id="trip-station-name">${selectedTrain.destStation}</span>`;
-            stationTag.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedTrain.destStation)}`;
+        if (tripMode === 'transit') {
+            // Setăm locațiile oficiale de gară (dacă le avem din Infofer), altfel folosim numele orașelor
+            const mapOrig = (isTrainRoute && selectedTrain && selectedTrain.origStation) ? selectedTrain.origStation : origName;
+            const mapDest = (isTrainRoute && selectedTrain && selectedTrain.destStation) ? selectedTrain.destStation : destName;
+            
+            stationTag.innerHTML = `<i class="fa-solid fa-train-tram mr-2"></i> <span id="trip-station-name">Vezi traseul feroviar pe Maps</span>`;
+            // Folosim travelmode=transit pentru a forța afișarea șinelor de cale ferată și a transportului în comun
+            stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(mapOrig)}&destination=${encodeURIComponent(mapDest)}&travelmode=transit`;
             stationTag.classList.remove('hidden');
+            
         } else if (tripMode === 'car') {
-            stationTag.innerHTML = `<i class="fa-solid fa-route mr-2"></i> <span id="trip-station-name">Vezi traseul pe Google Maps</span>`;
+            stationTag.innerHTML = `<i class="fa-solid fa-route mr-2"></i> <span id="trip-station-name">Vezi traseul auto pe Maps</span>`;
+            // Folosim travelmode=driving pentru mașină
             stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origName)}&destination=${encodeURIComponent(destName)}&travelmode=driving`;
             stationTag.classList.remove('hidden');
+            
         } else {
             stationTag.classList.add('hidden');
         }
