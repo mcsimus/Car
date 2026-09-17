@@ -7,6 +7,17 @@ let lastWeatherData = null;
 let lastLocName = '';
 let lastCountry = '';
 
+// Utilitare pentru diacritice românești
+const removeDiacritics = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+const fixRomanianDiacritics = (str) => {
+    if (!str) return "";
+    return str
+        .replace(/ş/g, 'ș')
+        .replace(/Ş/g, 'Ș')
+        .replace(/ţ/g, 'ț')
+        .replace(/Ţ/g, 'Ț');
+};
+
 function applyTheme() {
     const html = document.documentElement;
     const isDark = currentTheme === 'dark' || (currentTheme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -755,7 +766,10 @@ async function openTrainModal() {
                 
                 if (isTransfer) {
                     const minsInDay = dep.getHours() * 60 + dep.getMinutes();
-                    infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Itineraries?DepartureStationName=${encodeURIComponent(exactOrig)}&ArrivalStationName=${encodeURIComponent(exactDest)}&DepartureDate=${dateFormatted}&TimeSelectionId=0&MinutesInDay=${minsInDay}&OrderingTypeId=0&ConnectionsTypeId=1&BetweenTrainsMinimumMinutes=&ChangeStationName=`;
+                    // Eliminăm diacriticele pentru linkul Infofer pentru a garanta compatibilitatea 100%
+                    const infoferOrig = removeDiacritics(exactOrig);
+                    const infoferDest = removeDiacritics(exactDest);
+                    infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Itineraries?DepartureStationName=${encodeURIComponent(infoferOrig)}&ArrivalStationName=${encodeURIComponent(infoferDest)}&DepartureDate=${dateFormatted}&TimeSelectionId=0&MinutesInDay=${minsInDay}&OrderingTypeId=0&ConnectionsTypeId=1&BetweenTrainsMinimumMinutes=&ChangeStationName=`;
                 } else {
                     infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Tren/${trainNum}?Date=${dateFormatted}`;
                 }
@@ -798,8 +812,8 @@ function selectCfrTrain(type, depIso, durationHrs, exactOrig, exactDest, infofer
     selectedTrain = { 
         type: type, 
         durationHrs: parseFloat(durationHrs) || 2.5, 
-        origStation: exactOrig, 
-        destStation: exactDest, 
+        origStation: fixRomanianDiacritics(exactOrig), 
+        destStation: fixRomanianDiacritics(exactDest), 
         link: infoferLink, 
         isTransfer: Boolean(isTransfer)
     };
@@ -922,8 +936,8 @@ async function processTrip() {
         const wOrig = getForecastAtTime(origWeather, depDate.getTime());
         const wDest = getForecastAtTime(destWeather, arrDate.getTime());
 
-        const dispOrig = (isTrainRoute && selectedTrain && selectedTrain.origStation) ? selectedTrain.origStation : cleanOrig;
-        const dispDest = (isTrainRoute && selectedTrain && selectedTrain.destStation) ? selectedTrain.destStation : cleanDest;
+        const dispOrig = (isTrainRoute && selectedTrain && selectedTrain.origStation) ? selectedTrain.origStation : fixRomanianDiacritics(cleanOrig);
+        const dispDest = (isTrainRoute && selectedTrain && selectedTrain.destStation) ? selectedTrain.destStation : fixRomanianDiacritics(cleanDest);
         
         document.getElementById('res-orig-name').textContent = dispOrig;
         document.getElementById('res-dest-name').textContent = dispDest;
