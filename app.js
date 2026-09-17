@@ -904,14 +904,21 @@ async function processTrip() {
 
         const stationTag = document.getElementById('trip-station');
         
+        // Extragem doar numele curat al orașelor (eliminăm virgulele sau detaliile administrative)
+        const cleanOrig = origName.split(',')[0].trim();
+        const cleanDest = destName.split(',')[0].trim();
+
         if (tripMode === 'transit') {
             stationTag.innerHTML = `<i class="fa-solid fa-train-tram mr-2"></i> <span id="trip-station-name">Vezi traseul feroviar pe Maps</span>`;
-            stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(mapOrig)}&destination=${encodeURIComponent(mapDest)}&travelmode=transit`;
+            // Trimitem doar orașele curate + transit: funcționează garantat atât în România, cât și internațional
+            stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(cleanOrig)}&destination=${encodeURIComponent(cleanDest)}&travelmode=transit`;
             stationTag.classList.remove('hidden');
+            
         } else if (tripMode === 'car') {
             stationTag.innerHTML = `<i class="fa-solid fa-route mr-2"></i> <span id="trip-station-name">Vezi traseul auto pe Maps</span>`;
-            stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origName)}&destination=${encodeURIComponent(destName)}&travelmode=driving`;
+            stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(cleanOrig)}&destination=${encodeURIComponent(cleanDest)}&travelmode=driving`;
             stationTag.classList.remove('hidden');
+            
         } else {
             stationTag.classList.add('hidden');
         }
@@ -926,9 +933,9 @@ async function processTrip() {
         const wOrig = getForecastAtTime(origWeather, depDate.getTime());
         const wDest = getForecastAtTime(destWeather, arrDate.getTime());
 
-        // Atribuire denumiri în căsuțele de rezultate de jos
-        document.getElementById('res-orig-name').textContent = (isTrainRoute && selectedTrain) ? mapOrig : origName.split(',')[0];
-        document.getElementById('res-dest-name').textContent = (isTrainRoute && selectedTrain) ? mapDest : destName.split(',')[0];
+        // Afișare adaptivă: gara oficială dacă există, altfel orașul curat
+        document.getElementById('res-orig-name').textContent = (isTrainRoute && selectedTrain && selectedTrain.origStation) ? selectedTrain.origStation : cleanOrig;
+        document.getElementById('res-dest-name').textContent = (isTrainRoute && selectedTrain && selectedTrain.destStation) ? selectedTrain.destStation : cleanDest;
 
         const codeOrig = WMO_CODES[wOrig.code] || WMO_CODES[0];
         document.getElementById('res-orig-time').textContent = depDate.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit', hour12: false});
