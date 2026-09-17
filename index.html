@@ -2,20 +2,12 @@
 <html lang="ro">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vremea Ta</title>
 
-    <!-- Meta-taguri pentru aplicație pe telefon (Android & iOS) -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Vremea Ta">
-    <meta name="theme-color" content="#0f172a">
-
-    <!-- Favicon SVG centrat corect -->
+    <!-- Pictogramă scurtătură Android & iOS (centrată optic) -->
     <link id="app-favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2310b981'/%3E%3Cpath fill='%23ffffff' transform='translate(19, 15) scale(0.122)' d='M496 384H16c-8.8 0-16-7.2-16-16V304c0-26.5 21.5-48 48-48h18.2l34.5-92.1C107.5 147.2 123.3 136 141.2 136H370.8c17.9 0 33.7 11.2 40.5 27.9L445.8 256H464c26.5 0 48 21.5 48 48v64c0 8.8-7.2 16-16 16zM144 336a48 48 0 1 0 0 96 48 48 0 1 0 0-96zm224 0a48 48 0 1 0 0 96 48 48 0 1 0 0-96zM137.9 256h236.2l-24-64H161.9l-24 64z'/%3E%3C/svg%3E">
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%2310b981'/%3E%3Cpath fill='%23ffffff' transform='translate(19, 15) scale(0.122)' d='M496 384H16c-8.8 0-16-7.2-16-16V304c0-26.5 21.5-48 48-48h18.2l34.5-92.1C107.5 147.2 123.3 136 141.2 136H370.8c17.9 0 33.7 11.2 40.5 27.9L445.8 256H464c26.5 0 48 21.5 48 48v64c0 8.8-7.2 16-16 16zM144 336a48 48 0 1 0 0 96 48 48 0 1 0 0-96zm224 0a48 48 0 1 0 0 96 48 48 0 1 0 0-96zM137.9 256h236.2l-24-64H161.9l-24 64z'/%3E%3C/svg%3E">
-    <link rel="manifest" href="manifest.json">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -82,12 +74,14 @@
         <!-- [HERO] Current Weather Card (Compactat și Expandabil) -->
         <div class="glass-card bg-white/40 dark:bg-slate-800/40 border border-slate-300 dark:border-slate-600 rounded-[1.5rem] p-6 mt-4 relative shadow-md">
             
+            <!-- Iconița mare de pe fundal izolată pentru a nu se tăia bulele de info -->
             <div class="absolute inset-0 overflow-hidden rounded-[1.5rem] pointer-events-none">
                 <div class="absolute top-0 right-0 p-6 opacity-5 text-slate-900 dark:text-white">
                     <i class="fa-solid fa-map text-8xl"></i>
                 </div>
             </div>
             
+            <!-- Zona esențială (Apeși oriunde pe ea pentru a expanda detaliile) -->
             <div class="relative z-10 cursor-pointer group" onclick="document.getElementById('hero-expanded').classList.toggle('hidden'); document.getElementById('hero-chevron').classList.toggle('rotate-180');">
                 <h2 id="city-name" class="text-lg font-semibold text-slate-900 dark:text-white tracking-wide">Se încarcă...</h2>
                 
@@ -96,18 +90,21 @@
                         <span id="current-temp" class="text-7xl font-bold leading-none">--</span>
                         <span id="hero-unit" class="text-4xl font-bold mt-1 ml-1 text-slate-600 dark:text-slate-300">°C</span>
                     </div>
+                    <!-- Iconița mare animată la hover peste oricare zonă a header-ului -->
                     <i id="current-icon" class="fa-solid fa-sun text-6xl text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.3)] transition-transform duration-300 group-hover:scale-110 group-active:scale-95"></i>
                 </div>
                 
                 <div class="flex items-center justify-between mt-3">
                     <p class="text-slate-600 dark:text-slate-300 text-sm font-medium"><span id="current-desc">--</span> <span class="text-slate-500 font-normal">| resimțit ca <span id="feels-like">--</span>°</span></p>
                     
+                    <!-- Butonul vizual de expandare -->
                     <div class="bg-white/60 dark:bg-slate-800/60 rounded-full w-8 h-8 flex items-center justify-center shadow-sm border border-slate-200 dark:border-slate-600 group-hover:bg-white/90 dark:group-hover:bg-slate-700 transition-colors">
                         <i id="hero-chevron" class="fa-solid fa-chevron-down text-slate-500 dark:text-slate-400 transition-transform duration-300 text-sm"></i>
                     </div>
                 </div>
             </div>
 
+            <!-- Partea ascunsă care se deschide la click -->
             <div id="hero-expanded" class="hidden relative z-20 pt-5 mt-5 border-t border-slate-300/50 dark:border-slate-600/50">
                 
                 <div class="grid grid-cols-3 gap-3 mb-6 relative z-10">
@@ -128,6 +125,7 @@
                     </div>
                 </div>
 
+                <!-- Meniuri Expandabile (Acordeon) în interiorul Hero -->
                 <div class="space-y-2 relative z-20">
                     
                     <!-- Acordeon: Calitatea Aerului -->
@@ -139,6 +137,7 @@
                         <div class="hidden p-4 pt-1 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20 rounded-b-xl">
                             <div class="flex items-center justify-between">
                                 
+                                <!-- Tooltip AQI Principal -->
                                 <div class="relative group cursor-help">
                                     <span id="aqi-val" class="text-4xl font-bold text-slate-900 dark:text-white leading-none border-b-[3px] border-dashed border-slate-400/60 dark:border-slate-500/60 pb-0.5">--</span>
                                     <div class="absolute bottom-full left-0 mb-3 w-56 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-3 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible active:opacity-100 active:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none">
@@ -156,6 +155,7 @@
                                 </div>
 
                                 <div class="flex space-x-2 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                                    <!-- Tooltip PM 2.5 -->
                                     <div class="relative group cursor-help">
                                         <span class="bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 block border-b-2 border-dashed border-b-slate-400/50">PM2.5: <span id="aqi-pm25" class="text-slate-900 dark:text-white font-bold">--</span></span>
                                         <div class="absolute bottom-full right-0 mb-2 w-48 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-2 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible active:opacity-100 active:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none text-center leading-tight">
@@ -163,6 +163,7 @@
                                             <div class="absolute top-full right-6 border-[5px] border-transparent border-t-slate-800/95 dark:border-t-slate-950/95"></div>
                                         </div>
                                     </div>
+                                    <!-- Tooltip PM 10 -->
                                     <div class="relative group cursor-help">
                                         <span class="bg-white/80 dark:bg-slate-800/80 px-3 py-1.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600 block border-b-2 border-dashed border-b-slate-400/50">PM10: <span id="aqi-pm10" class="text-slate-900 dark:text-white font-bold">--</span></span>
                                         <div class="absolute bottom-full right-0 mb-2 w-48 bg-slate-800/95 dark:bg-slate-950/95 backdrop-blur-md text-white text-[10px] rounded-xl p-2 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible active:opacity-100 active:visible transition-all duration-300 z-50 border border-slate-600 pointer-events-none text-center leading-tight">
@@ -183,6 +184,7 @@
                         </button>
                         <div class="hidden p-3 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20 rounded-b-xl">
                             <div class="grid grid-cols-2 gap-3">
+                                <!-- Tooltip Răsărit/Apus -->
                                 <div class="relative group cursor-help">
                                     <div class="flex justify-between items-center text-sm font-semibold text-slate-800 dark:text-white bg-white/60 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 border-b-2 border-dashed border-b-slate-400/50">
                                         <div><i class="fa-solid fa-arrow-up text-orange-500 dark:text-orange-400 mr-1.5 text-[10px]"></i><span id="sunrise-time">--:--</span></div>
@@ -194,6 +196,7 @@
                                     </div>
                                 </div>
                                 
+                                <!-- Tooltip UV Index -->
                                 <div class="relative group cursor-help">
                                     <div class="flex justify-center items-center space-x-2 text-sm font-semibold text-slate-800 dark:text-white bg-white/60 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-600 border-b-2 border-dashed border-b-slate-400/50">
                                         <i class="fa-solid fa-glasses text-purple-500 dark:text-purple-400"></i>
@@ -218,6 +221,7 @@
                         <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-3 text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-widest hover:bg-white/80 dark:hover:bg-slate-800/60 rounded-xl transition">
                             <span class="flex items-center"><i class="fa-solid fa-gauge-high mr-2 text-emerald-500 dark:text-emerald-400 cursor-pointer transition-transform duration-200" onclick="event.stopPropagation(); this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i> Evoluție Presiune</span>
                             
+                            <!-- Tooltip Presiune Actuală (pe buton) -->
                             <span class="flex items-center relative group cursor-help">
                                 <span class="text-sm font-bold text-slate-800 dark:text-white mr-1 border-b-[2px] border-dashed border-slate-400/60 pb-0.5"><span id="current-pressure">--</span></span>
                                 <span class="text-[9px] text-slate-500 dark:text-slate-400 mr-3">hPa</span>
@@ -233,6 +237,8 @@
                             </span>
                         </button>
                         <div class="hidden p-4 pt-3 border-t border-slate-200 dark:border-slate-700/50 bg-white/30 dark:bg-slate-900/20 rounded-b-xl">
+                            
+                            <!-- Tooltip Grafic -->
                             <div class="relative h-14 w-full px-2 group cursor-help">
                                 <svg id="pressure-svg" class="w-full h-full overflow-visible"></svg>
                                 <div class="absolute -top-2 right-0 text-slate-400 dark:text-slate-500"><i class="fa-solid fa-circle-info text-[10px]"></i></div>
@@ -288,6 +294,7 @@
         <!-- Asistent Garderobă -->
         <div class="glass-card bg-white/40 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-300 dark:border-slate-600 shadow-md relative z-20">
             
+            <!-- Tooltip Titlu Garderobă -->
             <h3 class="relative group cursor-help inline-flex items-center text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b-[2px] border-dashed border-slate-400/50 pb-0.5 mb-4">
                 <i class="fa-solid fa-person-walking-luggage mr-3 text-2xl text-amber-500 dark:text-amber-400 drop-shadow-sm cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i> Asistent Garderobă
                 
@@ -327,8 +334,8 @@
                     <p id="car-wash-status" class="text-sm font-medium text-slate-800 dark:text-white leading-tight">Se calculează...</p>
                 </div>
                 <div class="bg-white/60 dark:bg-slate-900/60 w-12 h-12 rounded-full border border-slate-300 dark:border-slate-700 shadow-inner flex items-center justify-center shrink-0">
-                <i id="car-wash-icon" class="fa-solid fa-car-side text-xl leading-none text-slate-400 dark:text-slate-500 cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i>
-            </div>
+                    <i id="car-wash-icon" class="fa-solid fa-car-side text-xl text-slate-400 dark:text-slate-500 cursor-pointer transition-transform duration-200" onclick="this.style.transform='scale(1.3)'; setTimeout(() => this.style.transform='', 200);"></i>
+                </div>
             </div>
             <div class="mt-4 pt-3 border-t border-slate-300 dark:border-slate-700 grid grid-cols-1 gap-1.5 text-[10px] text-slate-600 dark:text-slate-300 font-medium">
                 <div class="flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 shadow-[0_0_5px_#10b981]"></span> <span>Verde: Fără ploaie în 3 zile.</span></div>
@@ -419,18 +426,18 @@
                         </button>
                     </div>
 
-                    <!-- Buton Interogare Trenuri CFR (vizibil doar pe mod Comun/Tren) -->
+                    <!-- Buton Interogare Trenuri CFR -->
                     <button id="btn-train-cfr" onclick="openTrainModal()" type="button" class="hidden mt-2 w-full bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-500/40 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center">
                         <i class="fa-solid fa-train mr-1.5"></i> Alege Tren din Mersul Trenurilor
                     </button>
                 </div>
 
-                <!-- BUTONUL PROCESEAZĂ DATELE (MUTAT AICI: ÎNAINTE DE REZULTATE) -->
+                <!-- BUTONUL PROCESEAZĂ DATELE (MUTAT ÎNAINTE DE REZULTATE) -->
                 <button id="btn-process-trip" onclick="processTrip()" type="button" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl shadow-md transition flex items-center justify-center">
                     <i class="fa-solid fa-bolt mr-2"></i> Procesează Datele
                 </button>
 
-                <!-- 1. SUMAR TRASEU (APARE SUB BUTON) -->
+                <!-- 1. SUMAR TRASEU -->
                 <div id="trip-summary" class="hidden bg-slate-100/70 dark:bg-slate-900/40 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 text-xs space-y-1.5">
                     <div class="flex justify-between">
                         <span class="text-slate-500 dark:text-slate-400">Timp estimat:</span>
@@ -441,7 +448,7 @@
                         <span id="trip-arrival" class="font-bold text-slate-800 dark:text-white">--</span>
                     </div>
 
-                    <!-- RÂND NOU: Distanță estimată -->
+                    <!-- RÂND DISTANȚĂ ESTIMATĂ -->
                     <div id="trip-distance-row" class="hidden flex justify-between">
                         <span class="text-slate-500 dark:text-slate-400">Distanță estimată:</span>
                         <span id="trip-distance" class="font-bold text-slate-800 dark:text-white">--</span>
@@ -532,16 +539,5 @@
             </div>
         </div>
     </div>
-<script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .catch(err => console.error('SW Error:', err));
-            });
-        }
-    </script>
-</body>
-
-    
 </body>
 </html>
