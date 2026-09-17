@@ -904,54 +904,58 @@ async function processTrip() {
         }
 
         let durationHrs = 0;
-        let carDistanceText = '';
+        let distanceText = '';
         const isTrainRoute = (tripMode === 'transit' && selectedTrain !== null);
 
+        // Obținem datele despre coridorul geografic real (distanțe reale pe relief)
+        let routeDistances = [];
+        try {
+            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${origCoords.longitude},${origCoords.latitude};${destCoords.longitude},${destCoords.latitude}?overview=false&alternatives=true`;
+            const osrmRes = await fetch(osrmUrl);
+            const osrmData = await osrmRes.json();
+            if (osrmData.code === "Ok" && osrmData.routes.length > 0) {
+                routeDistances = osrmData.routes.map(r => Math.round(r.distance / 1000));
+                if (tripMode === 'car') {
+                    durationHrs = osrmData.routes[0].duration / 3600;
+                }
+            }
+        } catch (err) {
+            // Fallback în caz de indisponibilitate a serverului de navigație
+            const directDist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
+            routeDistances = [Math.round(directDist * 1.15), Math.round(directDist * 1.30)];
+            if (tripMode === 'car') durationHrs = directDist / 75;
+        }
+
+        // 1. CALCUL DISTANȚĂ & DURATĂ
         if (isTrainRoute) {
+            // Durata feroviară
             if (selectedTrain.isTransfer) {
                 const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
                 durationHrs = (dist / 60) + 1.5;
                 selectedTrain.durationHrs = durationHrs;
+
+                // La transfer feroviar afișăm intervalul variantelor de legătură
+                const minDist = Math.min(...routeDistances);
+                const maxDist = Math.max(...routeDistances);
+                distanceText = minDist !== maxDist ? `~${minDist} – ${maxDist} km` : `~${minDist} km`;
             } else {
                 durationHrs = parseFloat(selectedTrain.durationHrs) || 2.5;
+                // La tren direct linia ferată este fixă (aproximativ egală cu lungimea coridorului)
+                const baseDist = routeDistances.length > 0 ? routeDistances[0] : Math.round(calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude) * 1.15);
+                distanceText = `~${baseDist} km (cale ferată)`;
+            }
+        } else if (tripMode === 'car') {
+            // La mașină afișăm intervalul tuturor rutelor rutiere disponibile
+            if (routeDistances.length > 0) {
+                const minDist = Math.min(...routeDistances);
+                const maxDist = Math.max(...routeDistances);
+                distanceText = minDist !== maxDist ? `${minDist} – ${maxDist} km` : `${minDist} km`;
             }
         } else {
-            if (tripMode === 'car') {
-                try {
-                    // Adăugăm alternatives=true pentru a analiza toate rutele posibile
-                    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${origCoords.longitude},${origCoords.latitude};${destCoords.longitude},${destCoords.latitude}?overview=false&alternatives=true`;
-                    const osrmRes = await fetch(osrmUrl);
-                    const osrmData = await osrmRes.json();
-                    
-                    if (osrmData.code === "Ok" && osrmData.routes.length > 0) {
-                        // Traseul principal (de regulă cel mai rapid ca timp)
-                        durationHrs = osrmData.routes[0].duration / 3600;
-
-                        // Extragem distanțele tuturor variantelor găsite de OSRM (în km)
-                        const distances = osrmData.routes.map(r => Math.round(r.distance / 1000));
-                        const minDist = Math.min(...distances);
-                        const maxDist = Math.max(...distances);
-
-                        if (minDist !== maxDist) {
-                            carDistanceText = `${minDist} – ${maxDist} km`;
-                        } else {
-                            carDistanceText = `${minDist} km`;
-                        }
-                    } else {
-                        throw new Error("Ruta auto nu a putut fi calculată.");
-                    }
-                } catch (err) {
-                    const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
-                    durationHrs = dist / 75;
-                    // Estimare de rezervă (cu 20-35% mai mult decât linia dreaptă pe șosele)
-                    const minEst = Math.round(dist * 1.20);
-                    const maxEst = Math.round(dist * 1.35);
-                    carDistanceText = `${minEst} – ${maxEst} km`;
-                }
-            } else {
-                const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
-                durationHrs = (dist / 50) + 0.5;
-            }
+            // Transport în comun fără tren selectat
+            const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
+            durationHrs = (dist / 50) + 0.5;
+            distanceText = `~${Math.round(dist * 1.2)} km`;
         }
 
         const depDate = new Date(datetimeVal);
@@ -966,11 +970,11 @@ async function processTrip() {
         const arrOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit', hour12: false };
         document.getElementById('trip-arrival').textContent = arrDate.toLocaleString('ro-RO', arrOptions);
         
-        // Afișăm sau ascundem rândul de distanță în funcție de modul ales
+        // AFIȘARE DISTANȚĂ (activă atât la mașină, cât și la tren)
         const distRow = document.getElementById('trip-distance-row');
         const distVal = document.getElementById('trip-distance');
-        if (tripMode === 'car' && carDistanceText && distRow && distVal) {
-            distVal.textContent = carDistanceText;
+        if (distanceText && distRow && distVal) {
+            distVal.textContent = distanceText;
             distRow.classList.remove('hidden');
         } else if (distRow) {
             distRow.classList.add('hidden');
