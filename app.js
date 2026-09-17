@@ -924,8 +924,8 @@ async function processTrip() {
         const wDest = getForecastAtTime(destWeather, arrDate.getTime());
 
         // Dacă avem rută de tren, folosim numele oficiale. Altfel, numele tastat.
-        document.getElementById('res-orig-name').textContent = (isTrainRoute && selectedTrain && selectedTrain.origStation) ? selectedTrain.origStation : origName.split(',')[0];
-        document.getElementById('res-dest-name').textContent = (isTrainRoute && selectedTrain && selectedTrain.destStation) ? selectedTrain.destStation : destName.split(',')[0];
+        document.getElementById('res-orig-name').textContent = (isTrainRoute && selectedTrain) ? mapOrig : origName.split(',')[0];
+        document.getElementById('res-dest-name').textContent = (isTrainRoute && selectedTrain) ? mapDest : destName.split(',')[0];
 
         const codeOrig = WMO_CODES[wOrig.code] || WMO_CODES[0];
         document.getElementById('res-orig-time').textContent = depDate.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit', hour12: false});
