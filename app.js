@@ -99,12 +99,80 @@ setInterval(updateDateTime, 1000);
 updateDateTime();
 
 // ==========================================
-// 3. GEOCODING ȘI API FETCH
+// 3. DICȚIONAR LOCAL ȘI AUTOCORECT (FUZZY)
+// ==========================================
+const ROMANIAN_CITIES_DICT = [
+    "Alba Iulia", "Alexandria", "Arad", "Bacău", "Baia Mare", "Bârlad", "Bistrița", 
+    "Botoșani", "Brașov", "Brăila", "București", "Bușteni", "Buzău", "Călărași", 
+    "Câmpina", "Câmpulung", "Caransebeș", "Cernavodă", "Cluj-Napoca", "Constanța", 
+    "Costinești", "Craiova", "Curtea de Argeș", "Dej", "Deva", "Dorohoi", 
+    "Drobeta-Turnu Severin", "Eforie Nord", "Eforie Sud", "Făgăraș", "Focșani", 
+    "Galați", "Giurgiu", "Hunedoara", "Iași", "Lugoj", "Mangalia", "Mediaș", 
+    "Medgidia", "Miercurea Ciuc", "Mioveni", "Năvodari", "Oradea", "Pașcani", 
+    "Petroșani", "Piatra Neamț", "Pitești", "Ploiești", "Predeal", "Rădăuți", 
+    "Râmnicu Vâlcea", "Reșița", "Roman", "Satu Mare", "Sebeș", "Sfântu Gheorghe", 
+    "Sibiu", "Sighetu Marmației", "Sighișoara", "Sinaia", "Slatina", "Slobozia", 
+    "Suceava", "Târgoviște", "Târgu Jiu", "Târgu Mureș", "Tecuci", "Timișoara", 
+    "Tulcea", "Turda", "Vaslui", "Vama Veche", "Zalău",
+    "Budapesta", "Viena", "Sofia", "Salonic", "Chisinau"
+];
+
+// Algoritmul Damerau-Levenshtein pentru detectarea transpozițiilor (litere inversate)
+function damerauLevenshtein(a, b) {
+    const al = a.length;
+    const bl = b.length;
+    if (al === 0) return bl;
+    if (bl === 0) return al;
+    
+    const matrix = [];
+    for (let i = 0; i <= al; i++) matrix[i] = [i];
+    for (let j = 0; j <= bl; j++) matrix[0][j] = j;
+
+    for (let i = 1; i <= al; i++) {
+        for (let j = 1; j <= bl; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(
+                matrix[i - 1][j] + 1,       // Ștergere
+                matrix[i][j - 1] + 1,       // Inserare
+                matrix[i - 1][j - 1] + cost // Substituire
+            );
+            // Detectare inversare două litere alăturate (ex: 'sn' în loc de 'ns')
+            if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+                matrix[i][j] = Math.min(matrix[i][j], matrix[i - 2][j - 2] + 1);
+            }
+        }
+    }
+    return matrix[al][bl];
+}
+
+function findFuzzyCity(query) {
+    const q = removeDiacritics(query).toLowerCase().trim();
+    if (q.length < 3) return null;
+
+    let bestMatch = null;
+    let lowestDist = Infinity;
+
+    for (let city of ROMANIAN_CITIES_DICT) {
+        const cNorm = removeDiacritics(city).toLowerCase();
+        // Comparăm prefixul orașului cu textul tastat
+        const prefix = cNorm.substring(0, Math.min(cNorm.length, q.length));
+        const dist = damerauLevenshtein(q, prefix);
+
+        const maxAllowedDist = q.length <= 5 ? 1 : 2;
+        if (dist <= maxAllowedDist && dist < lowestDist) {
+            lowestDist = dist;
+            bestMatch = city;
+        }
+    }
+    return bestMatch;
+}
+
+// ==========================================
+// 4. GEOCODING ȘI API FETCH
 // ==========================================
 async function getCoordinates(city) {
     try {
         const cleanCity = city.split(',')[0].trim();
-        // Căutare primară prin Open-Meteo Geocoding
         const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cleanCity)}&count=5&language=ro&format=json`);
         const data = await res.json();
         
@@ -123,7 +191,6 @@ async function getCoordinates(city) {
             };
         }
 
-        // Fallback secundar Nominatim dacă locația nu este indexată în Open-Meteo
         const nomRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&addressdetails=1&limit=1&accept-language=ro`);
         const nomData = await nomRes.json();
         if (nomData && nomData.length > 0) {
@@ -179,7 +246,7 @@ async function loadCity(city) {
 }
 
 // ==========================================
-// 4. FUNCȚIA DISPECER UI
+// 5. FUNCȚIA DISPECER UI
 // ==========================================
 function updateUI(fullData, locationName, country) {
     lastWeatherData = fullData;
@@ -206,7 +273,7 @@ function updateUI(fullData, locationName, country) {
 }
 
 // ==========================================
-// 5. MODULE UI SPECIFICE
+// 6. MODULE UI SPECIFICE
 // ==========================================
 function updateHeaderInfo(locationName, country) {
     document.getElementById('city-name').textContent = country ? `${locationName}, ${country}` : locationName;
@@ -520,7 +587,7 @@ function renderDailyForecast(weather, todayIdx) {
 }
 
 // ==========================================
-// 6. EVENT LISTENERS
+// 7. EVENT LISTENERS
 // ==========================================
 document.getElementById('search-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -589,7 +656,7 @@ if (hourlySlider && hourlyContainer) {
 }
 
 // ==========================================
-// 7. ANIMAȚIE BUTON „PROCESEAZĂ DATELE”
+// 8. ANIMAȚIE BUTON „PROCESEAZĂ DATELE”
 // ==========================================
 function triggerProcessButtonAnimation() {
     const btn = document.getElementById('btn-process-trip');
@@ -604,7 +671,7 @@ function clearProcessButtonAnimation() {
 }
 
 // ==========================================
-// 8. AUTOCOMPLETARE INTELIGENTĂ (OPEN-METEO)
+// 9. AUTOCOMPLETARE CU AUTOCORECT INTEGRAT
 // ==========================================
 function attachAutocomplete(inputId, suggestId, onSelectCallback) {
     const input = document.getElementById(inputId);
@@ -623,24 +690,48 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
         }
 
         clearTimeout(timeout);
-        // Pornim căutarea inteligentă de la minim 2 litere
         if (val.length < 2) return;
 
         timeout = setTimeout(async () => {
             try {
-                // Interogăm motorul rapid de geocoding fără restricții rigide de 1 req/sec
-                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=10&language=ro&format=json`);
-                const data = await res.json();
+                let res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=10&language=ro&format=json`);
+                let data = await res.json();
+                let isAutocorrected = false;
+                let correctedSuggestion = null;
+
+                // Dacă API nu găsește nimic din cauza unei greșeli de tastare (ex: cosnta), aplicăm autocorecția locală
+                if (!data || !data.results || data.results.length === 0) {
+                    const bestFuzzy = findFuzzyCity(val);
+                    if (bestFuzzy) {
+                        const fuzzyRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(bestFuzzy)}&count=5&language=ro&format=json`);
+                        const fuzzyData = await fuzzyRes.json();
+                        if (fuzzyData && fuzzyData.results && fuzzyData.results.length > 0) {
+                            data = fuzzyData;
+                            isAutocorrected = true;
+                            correctedSuggestion = bestFuzzy;
+                        }
+                    }
+                }
                 
                 if (data && data.results && data.results.length > 0) {
-                    // Ierarhizare: orașele din România primesc prioritate naturală, urmate de marile orașe globale
                     const sortedResults = data.results.sort((a, b) => {
                         const scoreA = (a.population || 0) + (a.country_code === 'RO' ? 5000000 : 0);
                         const scoreB = (b.population || 0) + (b.country_code === 'RO' ? 5000000 : 0);
                         return scoreB - scoreA;
                     });
 
-                    suggest.innerHTML = sortedResults.map(place => {
+                    let html = '';
+                    
+                    // Notificare discretă de autocorecție dacă a fost detectată o greșeală
+                    if (isAutocorrected && correctedSuggestion) {
+                        html += `
+                            <div class="px-3 py-1.5 bg-amber-500/10 border-b border-amber-500/20 text-[11px] text-amber-600 dark:text-amber-400 font-semibold flex items-center">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i> Ai vrut să spui: <span class="underline ml-1">${correctedSuggestion}</span>?
+                            </div>
+                        `;
+                    }
+
+                    html += sortedResults.map(place => {
                         const cityName = place.name;
                         const adminName = place.admin1 && place.admin1 !== cityName ? `, ${place.admin1}` : '';
                         const countryName = place.country ? ` (${place.country})` : '';
@@ -657,9 +748,11 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
                             ${isRO ? '<span class="ml-2 text-[9px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded">RO</span>' : ''}
                         </div>`;
                     }).join('');
+
+                    suggest.innerHTML = html;
                     suggest.classList.remove('hidden');
 
-                    Array.from(suggest.children).forEach(item => {
+                    Array.from(suggest.querySelectorAll('[data-name]')).forEach(item => {
                         item.addEventListener('click', () => {
                             const selectedName = item.getAttribute('data-name');
                             input.value = selectedName;
@@ -690,7 +783,7 @@ let tripMode = 'car';
 let selectedTrain = null; 
 
 // ==========================================
-// 9. INITIALIZARE FLATPICKR (CALENDAR 24H)
+// 10. INITIALIZARE FLATPICKR (CALENDAR 24H)
 // ==========================================
 flatpickr("#trip-datetime", {
     enableTime: true,
@@ -788,7 +881,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 // ==========================================
-// 10. INTEROGARE ȘI SELECTARE TRENURI CFR
+// 11. INTEROGARE ȘI SELECTARE TRENURI CFR
 // ==========================================
 async function openTrainModal() {
     const origName = document.getElementById('trip-origin').value.trim();
@@ -891,7 +984,7 @@ function closeTrainModal() {
 }
 
 // ==========================================
-// 11. CALCUL TRASEU ȘI PROGNOZĂ DESTINAȚIE
+// 12. CALCUL TRASEU ȘI PROGNOZĂ DESTINAȚIE
 // ==========================================
 function getForecastAtTime(weatherData, targetMs) {
     let minDiff = Infinity;
@@ -1053,7 +1146,7 @@ async function processTrip() {
 }
 
 // ==========================================
-// 12. LOGICĂ CAMERE WEB CFR
+// 13. LOGICĂ CAMERE WEB CFR
 // ==========================================
 function openWebcamModal() {
     document.getElementById('webcam-modal').classList.remove('hidden');
@@ -1064,7 +1157,7 @@ function closeWebcamModal() {
 }
 
 // ==========================================
-// 13. INITIALIZARE LA INCARCAREA PAGINII
+// 14. INITIALIZARE LA INCARCAREA PAGINII
 // ==========================================
 const savedCity = localStorage.getItem('lastCity') || 'Constanța';
 document.getElementById('unit-label').textContent = `°${currentUnit}`;
