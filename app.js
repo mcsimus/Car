@@ -18,6 +18,17 @@ const fixRomanianDiacritics = (str) => {
         .replace(/Ţ/g, 'Ț');
 };
 
+// Schimbarea dinamică a culorii iconiței din tab / ecran telefon
+function setDynamicFavicon(color) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="${color}"/><path fill="#ffffff" transform="translate(19, 30) scale(0.122)" d="M496 384H16c-8.8 0-16-7.2-16-16V304c0-26.5 21.5-48 48-48h18.2l34.5-92.1C107.5 147.2 123.3 136 141.2 136H370.8c17.9 0 33.7 11.2 40.5 27.9L445.8 256H464c26.5 0 48 21.5 48 48v64c0 8.8-7.2 16-16 16zM144 336a48 48 0 1 0 0 96 48 48 0 1 0 0-96zm224 0a48 48 0 1 0 0 96 48 48 0 1 0 0-96zM137.9 256h236.2l-24-64H161.9l-24 64z"/></svg>`;
+    const dataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    
+    let link = document.getElementById('app-favicon') || document.querySelector("link[rel*='icon']");
+    if (link) {
+        link.href = dataUrl;
+    }
+}
+
 function applyTheme() {
     const html = document.documentElement;
     const isDark = currentTheme === 'dark' || (currentTheme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -117,7 +128,6 @@ const ROMANIAN_CITIES_DICT = [
     "Budapesta", "Viena", "Sofia", "Salonic", "Chisinau"
 ];
 
-// Algoritmul Damerau-Levenshtein pentru detectarea transpozițiilor (litere inversate)
 function damerauLevenshtein(a, b) {
     const al = a.length;
     const bl = b.length;
@@ -136,7 +146,7 @@ function damerauLevenshtein(a, b) {
                 matrix[i][j - 1] + 1,       // Inserare
                 matrix[i - 1][j - 1] + cost // Substituire
             );
-            // Detectare inversare două litere alăturate (ex: 'sn' în loc de 'ns')
+            // Inversare litere alăturate (ex: 'sn' în loc de 'ns')
             if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
                 matrix[i][j] = Math.min(matrix[i][j], matrix[i - 2][j - 2] + 1);
             }
@@ -154,7 +164,6 @@ function findFuzzyCity(query) {
 
     for (let city of ROMANIAN_CITIES_DICT) {
         const cNorm = removeDiacritics(city).toLowerCase();
-        // Comparăm prefixul orașului cu textul tastat
         const prefix = cNorm.substring(0, Math.min(cNorm.length, q.length));
         const dist = damerauLevenshtein(q, prefix);
 
@@ -277,7 +286,6 @@ function updateUI(fullData, locationName, country) {
 // ==========================================
 function updateHeaderInfo(locationName, country) {
     document.getElementById('city-name').textContent = country ? `${locationName}, ${country}` : locationName;
-    
     document.getElementById('unit-label').textContent = `°${currentUnit}`;
     const heroUnit = document.getElementById('hero-unit');
     if (heroUnit) heroUnit.textContent = `°${currentUnit}`;
@@ -504,14 +512,20 @@ function updateCarWashIndex(weather, todayIdx) {
     cardWash.className = 'glass-card bg-white/40 dark:bg-slate-800/40 rounded-2xl p-5 border-l-4 transition-colors duration-500 shadow-md border-t border-r border-b border-slate-300 dark:border-slate-600';
 
     if (probToday > 20 || probTmrw > 20) {
-        iconWash.classList.add('text-rose-500'); cardWash.classList.add('border-l-rose-500');
+        iconWash.classList.add('text-rose-500'); 
+        cardWash.classList.add('border-l-rose-500');
         statusWash.textContent = 'Nefavorabil. Precipitații în 24h.';
+        setDynamicFavicon('#f43f5e'); // Iconiță Roșie pe tab / mobil
     } else if (probDay3 > 20) {
-        iconWash.classList.add('text-orange-500'); cardWash.classList.add('border-l-orange-500');
+        iconWash.classList.add('text-orange-500'); 
+        cardWash.classList.add('border-l-orange-500');
         statusWash.textContent = 'Acceptabil. Risc ploaie în 2-3 zile.';
+        setDynamicFavicon('#f97316'); // Iconiță Portocalie pe tab / mobil
     } else {
-        iconWash.classList.add('text-emerald-500'); cardWash.classList.add('border-l-emerald-500');
+        iconWash.classList.add('text-emerald-500'); 
+        cardWash.classList.add('border-l-emerald-500');
         statusWash.textContent = 'Vreme excelentă! Fără ploaie 3 zile.';
+        setDynamicFavicon('#10b981'); // Iconiță Verde pe tab / mobil
     }
 }
 
@@ -598,11 +612,9 @@ document.getElementById('search-form').addEventListener('submit', (e) => {
 document.getElementById('btn-unit').addEventListener('click', () => {
     currentUnit = currentUnit === 'C' ? 'F' : 'C';
     localStorage.setItem('tempUnit', currentUnit);
-    
     document.getElementById('unit-label').textContent = `°${currentUnit}`;
     const heroUnit = document.getElementById('hero-unit');
     if (heroUnit) heroUnit.textContent = `°${currentUnit}`;
-
     if (lastWeatherData) updateUI(lastWeatherData, lastLocName, lastCountry);
 });
 
@@ -699,7 +711,7 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
                 let isAutocorrected = false;
                 let correctedSuggestion = null;
 
-                // Dacă API nu găsește nimic din cauza unei greșeli de tastare (ex: cosnta), aplicăm autocorecția locală
+                // Dacă căutarea strictă nu găsește nimic din cauza inversării literelor (ex: cosnta), declanșăm autocorecția
                 if (!data || !data.results || data.results.length === 0) {
                     const bestFuzzy = findFuzzyCity(val);
                     if (bestFuzzy) {
@@ -722,7 +734,6 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
 
                     let html = '';
                     
-                    // Notificare discretă de autocorecție dacă a fost detectată o greșeală
                     if (isAutocorrected && correctedSuggestion) {
                         html += `
                             <div class="px-3 py-1.5 bg-amber-500/10 border-b border-amber-500/20 text-[11px] text-amber-600 dark:text-amber-400 font-semibold flex items-center">
@@ -828,7 +839,6 @@ function swapTripLocations() {
     document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
     document.getElementById('trip-summary').classList.add('hidden');
     document.getElementById('trip-results').classList.add('hidden');
-    
     triggerProcessButtonAnimation();
 }
 
