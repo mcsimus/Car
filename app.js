@@ -15,16 +15,16 @@ function applyTheme() {
     else html.classList.remove('dark');
 
     const btnIcon = document.getElementById('theme-icon');
-    if(btnIcon) {
-        if(currentTheme === 'light') btnIcon.className = 'fa-solid fa-sun text-amber-500 drop-shadow-md transition-transform duration-300 cursor-pointer';
-        else if(currentTheme === 'dark') btnIcon.className = 'fa-solid fa-moon text-blue-400 drop-shadow-md transition-transform duration-300 cursor-pointer';
+    if (btnIcon) {
+        if (currentTheme === 'light') btnIcon.className = 'fa-solid fa-sun text-amber-500 drop-shadow-md transition-transform duration-300 cursor-pointer';
+        else if (currentTheme === 'dark') btnIcon.className = 'fa-solid fa-moon text-blue-400 drop-shadow-md transition-transform duration-300 cursor-pointer';
         else btnIcon.className = 'fa-solid fa-circle-half-stroke text-slate-500 dark:text-slate-400 drop-shadow-md transition-transform duration-300 cursor-pointer';
     }
 }
 
 function cycleTheme() {
-    if(currentTheme === 'auto') currentTheme = 'light';
-    else if(currentTheme === 'light') currentTheme = 'dark';
+    if (currentTheme === 'auto') currentTheme = 'light';
+    else if (currentTheme === 'light') currentTheme = 'dark';
     else currentTheme = 'auto';
     
     localStorage.setItem('appTheme', currentTheme);
@@ -32,7 +32,7 @@ function cycleTheme() {
 }
 
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if(currentTheme === 'auto') applyTheme();
+    if (currentTheme === 'auto') applyTheme();
 });
 applyTheme();
 
@@ -137,11 +137,13 @@ async function getFullData(lat, lon) {
 
 async function loadCity(city) {
     const location = await getCoordinates(city);
-    if(location) {
+    if (location) {
         localStorage.setItem('lastCity', location.name);
         const fullData = await getFullData(location.latitude, location.longitude);
         updateUI(fullData, location.name, location.country_code);
-    } else { alert("Orașul nu a fost găsit."); }
+    } else { 
+        alert("Orașul nu a fost găsit."); 
+    }
 }
 
 // ==========================================
@@ -153,11 +155,11 @@ function updateUI(fullData, locationName, country) {
     lastCountry = country;
 
     const weather = fullData.weather;
-    if(!weather) return;
+    if (!weather) return;
 
     const todayStr = weather.current.time.split('T')[0];
     let todayIdx = weather.daily.time.indexOf(todayStr);
-    if(todayIdx === -1) todayIdx = 3;
+    if (todayIdx === -1) todayIdx = 3;
 
     updateHeaderInfo(locationName, country);
     updateCurrentWeather(weather);
@@ -198,8 +200,8 @@ function updateCurrentWeather(weather) {
 function renderWeatherAnimations(code) {
     const container = document.getElementById('weather-animations');
     container.innerHTML = ''; 
-    if(code !== 0 && code !== 1) {
-        for(let i=0; i<4; i++) {
+    if (code !== 0 && code !== 1) {
+        for (let i = 0; i < 4; i++) {
             const cloud = document.createElement('i');
             cloud.className = 'fa-solid fa-cloud cloud-anim';
             cloud.style.top = `${Math.random() * 40}%`;
@@ -209,8 +211,8 @@ function renderWeatherAnimations(code) {
             container.appendChild(cloud);
         }
     }
-    if([51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99].includes(code)) {
-        for(let i=0; i<20; i++) {
+    if ([51,53,55,56,57,61,63,65,66,67,80,81,82,95,96,99].includes(code)) {
+        for (let i = 0; i < 20; i++) {
             const drop = document.createElement('div');
             drop.className = 'rain-anim';
             drop.style.left = `${Math.random() * 100}vw`;
@@ -219,8 +221,8 @@ function renderWeatherAnimations(code) {
             container.appendChild(drop);
         }
     }
-    if([71,73,75,77,85,86].includes(code)) {
-        for(let i=0; i<25; i++) {
+    if ([71,73,75,77,85,86].includes(code)) {
+        for (let i = 0; i < 25; i++) {
             const flake = document.createElement('div');
             flake.className = 'snow-anim bg-white/80';
             flake.style.left = `${Math.random() * 100}vw`;
@@ -234,7 +236,7 @@ function renderWeatherAnimations(code) {
 function updateAQI(aqiData) {
     const valEl = document.getElementById('aqi-val');
     const descEl = document.getElementById('aqi-desc');
-    if(!aqiData || !aqiData.current) {
+    if (!aqiData || !aqiData.current) {
         valEl.textContent = '--'; 
         descEl.innerHTML = ''; 
         return;
@@ -246,10 +248,10 @@ function updateAQI(aqiData) {
     
     let color = 'text-emerald-500 dark:text-emerald-400'; 
     let icon = '<i class="fa-solid fa-thumbs-up"></i>';
-    if(aqi > 20) { color = 'text-yellow-500 dark:text-yellow-400'; icon = '<i class="fa-solid fa-thumbs-up"></i>'; }
-    if(aqi > 40) { color = 'text-orange-500 dark:text-orange-400'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
-    if(aqi > 60) { color = 'text-rose-600 dark:text-rose-500'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
-    if(aqi > 80) { color = 'text-purple-600 dark:text-purple-500'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
+    if (aqi > 20) { color = 'text-yellow-500 dark:text-yellow-400'; icon = '<i class="fa-solid fa-thumbs-up"></i>'; }
+    if (aqi > 40) { color = 'text-orange-500 dark:text-orange-400'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
+    if (aqi > 60) { color = 'text-rose-600 dark:text-rose-500'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
+    if (aqi > 80) { color = 'text-purple-600 dark:text-purple-500'; icon = '<i class="fa-solid fa-thumbs-down"></i>'; }
     
     descEl.innerHTML = icon;
     descEl.className = `text-xl ${color} drop-shadow-md transition-colors duration-300 cursor-pointer transition-transform duration-200`;
@@ -258,7 +260,7 @@ function updateAQI(aqiData) {
 
 function updateMarine(marineData) {
     const module = document.getElementById('marine-module');
-    if(!marineData || !marineData.current || marineData.current.wave_height === null) {
+    if (!marineData || !marineData.current || marineData.current.wave_height === null) {
         module.classList.add('hidden');
         return;
     }
@@ -272,13 +274,13 @@ function updateMarine(marineData) {
 function drawPressureChart(weather, todayIdx) {
     const pData = [];
     const labels = [];
-    for(let i = todayIdx - 3; i <= todayIdx + 3; i++) {
-        if(!weather.daily.time[i]) continue;
+    for (let i = todayIdx - 3; i <= todayIdx + 3; i++) {
+        if (!weather.daily.time[i]) continue;
         const dDate = new Date(weather.daily.time[i] + "T12:00:00");
         labels.push(i === todayIdx ? 'Azi' : daysRO[dDate.getDay()]);
         const targetTime = weather.daily.time[i] + "T12:00";
         let hIdx = weather.hourly.time.indexOf(targetTime);
-        if(hIdx === -1) hIdx = i * 24 + 12; 
+        if (hIdx === -1) hIdx = i * 24 + 12; 
         pData.push(weather.hourly.surface_pressure[hIdx]);
     }
     const minP = Math.min(...pData) - 1;
@@ -342,10 +344,10 @@ function updateWardrobeAssistant(weather, todayIdx) {
     let uvEl = document.getElementById('uv-desc');
     let uvColor = 'text-emerald-500 dark:text-emerald-400';
     
-    if(uvVal < 3) { uvEl.textContent = 'Scăzut'; }
-    else if(uvVal < 6) { uvEl.textContent = 'Moderat'; uvColor = 'text-yellow-500 dark:text-yellow-400'; }
-    else if(uvVal < 8) { uvEl.textContent = 'Ridicat'; uvColor = 'text-orange-500 dark:text-orange-400'; }
-    else if(uvVal < 11) { uvEl.textContent = 'F. Ridicat'; uvColor = 'text-rose-600 dark:text-rose-500'; }
+    if (uvVal < 3) { uvEl.textContent = 'Scăzut'; }
+    else if (uvVal < 6) { uvEl.textContent = 'Moderat'; uvColor = 'text-yellow-500 dark:text-yellow-400'; }
+    else if (uvVal < 8) { uvEl.textContent = 'Ridicat'; uvColor = 'text-orange-500 dark:text-orange-400'; }
+    else if (uvVal < 11) { uvEl.textContent = 'F. Ridicat'; uvColor = 'text-rose-600 dark:text-rose-500'; }
     else { uvEl.textContent = 'Extrem'; uvColor = 'text-purple-600 dark:text-purple-500'; }
     uvEl.className = `text-[10px] font-bold uppercase tracking-wide pb-0.5 ${uvColor}`;
 
@@ -383,7 +385,7 @@ function updateWardrobeAssistant(weather, todayIdx) {
     document.getElementById('equipment-later').innerHTML = getEquipmentTags(laterTemp, laterCode, laterWind, laterPrecipProb, laterIsDay);
     
     const tmrwIdx = todayIdx + 1;
-    if(weather.daily.time[tmrwIdx]) {
+    if (weather.daily.time[tmrwIdx]) {
         document.getElementById('equipment-tomorrow').innerHTML = getEquipmentTags(weather.daily.temperature_2m_max[tmrwIdx], weather.daily.weather_code[tmrwIdx], weather.daily.wind_speed_10m_max[tmrwIdx], weather.daily.precipitation_probability_max[tmrwIdx], true);
     }
 }
@@ -419,8 +421,8 @@ function renderHourlyForecast(weather) {
     hourlyContainer.innerHTML = '';
     const currentHourIdx = weather.hourly.time.findIndex(t => new Date(t) >= new Date());
     
-    for(let i = currentHourIdx; i < currentHourIdx + 24; i+=1) { 
-        if(!weather.hourly.time[i]) break;
+    for (let i = currentHourIdx; i < currentHourIdx + 24; i += 1) { 
+        if (!weather.hourly.time[i]) break;
         const timeObj = new Date(weather.hourly.time[i]);
         const hourStr = timeObj.getHours().toString().padStart(2, '0') + ':00';
         const temp = formatTemp(weather.hourly.temperature_2m[i]);
@@ -439,8 +441,8 @@ function renderHourlyForecast(weather) {
 function renderDailyForecast(weather, todayIdx) {
     const dailyContainer = document.getElementById('daily-container');
     dailyContainer.innerHTML = '';
-    for(let i = todayIdx; i < todayIdx + 7; i++) {
-        if(!weather.daily.time[i]) break;
+    for (let i = todayIdx; i < todayIdx + 7; i++) {
+        if (!weather.daily.time[i]) break;
         const dateObj = new Date(weather.daily.time[i] + "T12:00:00");
         const isToday = i === todayIdx;
         const dayName = isToday ? 'Astăzi' : daysRO[dateObj.getDay()];
@@ -454,11 +456,11 @@ function renderDailyForecast(weather, todayIdx) {
         const sunsetTime = weather.daily.sunset[i] ? weather.daily.sunset[i].split('T')[1] : '--:--';
 
         let uvColorDrop = 'text-emerald-500 dark:text-emerald-400';
-        if(uvMax !== '--') {
-            if(uvMax < 3) uvColorDrop = 'text-emerald-500 dark:text-emerald-400';
-            else if(uvMax < 6) uvColorDrop = 'text-yellow-500 dark:text-yellow-400';
-            else if(uvMax < 8) uvColorDrop = 'text-orange-500 dark:text-orange-400';
-            else if(uvMax < 11) uvColorDrop = 'text-rose-600 dark:text-rose-500';
+        if (uvMax !== '--') {
+            if (uvMax < 3) uvColorDrop = 'text-emerald-500 dark:text-emerald-400';
+            else if (uvMax < 6) uvColorDrop = 'text-yellow-500 dark:text-yellow-400';
+            else if (uvMax < 8) uvColorDrop = 'text-orange-500 dark:text-orange-400';
+            else if (uvMax < 11) uvColorDrop = 'text-rose-600 dark:text-rose-500';
             else uvColorDrop = 'text-purple-600 dark:text-purple-500';
         }
         
@@ -491,7 +493,7 @@ function renderDailyForecast(weather, todayIdx) {
 document.getElementById('search-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const city = document.getElementById('search-input').value.trim();
-    if(city) { loadCity(city); document.getElementById('search-input').value = ''; }
+    if (city) { loadCity(city); document.getElementById('search-input').value = ''; }
 });
 
 document.getElementById('btn-unit').addEventListener('click', () => {
@@ -567,7 +569,7 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
         suggest.innerHTML = '';
         suggest.classList.add('hidden');
         
-        if(inputId === 'trip-origin' || inputId === 'trip-dest') {
+        if (inputId === 'trip-origin' || inputId === 'trip-dest') {
             selectedTrain = null;
             document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
         }
@@ -602,7 +604,7 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
                             const selectedName = item.getAttribute('data-name');
                             input.value = selectedName;
                             suggest.classList.add('hidden');
-                            if(onSelectCallback) onSelectCallback(selectedName);
+                            if (onSelectCallback) onSelectCallback(selectedName);
                         });
                     });
                 }
@@ -611,7 +613,7 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
     });
 
     document.addEventListener('click', (e) => {
-        if(!input.contains(e.target) && !suggest.contains(e.target)) {
+        if (!input.contains(e.target) && !suggest.contains(e.target)) {
             suggest.classList.add('hidden');
         }
     });
@@ -643,7 +645,7 @@ flatpickr("#trip-datetime", {
 function openTripModal() {
     document.getElementById('trip-modal').classList.remove('hidden');
     const fp = document.getElementById('trip-datetime')._flatpickr;
-    if(fp) fp.setDate(new Date());
+    if (fp) fp.setDate(new Date());
     
     const origInput = document.getElementById('trip-origin');
     origInput.value = lastLocName || localStorage.getItem('lastCity') || '';
@@ -710,12 +712,15 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+// ==========================================
+// 9. INTEROGARE ȘI SELECTARE TRENURI CFR
+// ==========================================
 async function openTrainModal() {
     const origName = document.getElementById('trip-origin').value.trim();
     const destName = document.getElementById('trip-dest').value.trim();
     const datetimeVal = document.getElementById('trip-datetime').value;
     
-    if(!origName || !destName) {
+    if (!origName || !destName) {
         alert("Te rog completează Plecarea și Destinația întâi!");
         return;
     }
@@ -728,9 +733,8 @@ async function openTrainModal() {
         const res = await fetch(workerUrl);
         const data = await res.json();
 
-        // Extragem numele oficiale din Worker (dacă sunt disponibile), altfel facem fallback pe ce a introdus userul
-        const exactOrig = data.exactOrigin || origName.split(',')[0];
-        const exactDest = data.exactDest || destName.split(',')[0];
+        const exactOrig = data.exactOrigin || origName.split(',')[0].trim();
+        const exactDest = data.exactDest || destName.split(',')[0].trim();
 
         if (data.trains && data.trains.length > 0) {
             let html = '';
@@ -749,9 +753,8 @@ async function openTrainModal() {
                 const isTransfer = tr.isTransfer === true;
                 let infoferLink = "";
                 
-                if(isTransfer) {
+                if (isTransfer) {
                     const minsInDay = dep.getHours() * 60 + dep.getMinutes();
-                    // Infofer cere numele exact al gărilor oficiale pentru linkul de rute cu legături
                     infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Itineraries?DepartureStationName=${encodeURIComponent(exactOrig)}&ArrivalStationName=${encodeURIComponent(exactDest)}&DepartureDate=${dateFormatted}&TimeSelectionId=0&MinutesInDay=${minsInDay}&OrderingTypeId=0&ConnectionsTypeId=1&BetweenTrainsMinimumMinutes=&ChangeStationName=`;
                 } else {
                     infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Tren/${trainNum}?Date=${dateFormatted}`;
@@ -778,44 +781,47 @@ async function openTrainModal() {
             });
             listContainer.innerHTML = html;
         } else {
-            listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Eroare la procesarea rutelor.</div>';
+            listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Nu au fost găsite rute.</div>';
         }
     } catch (err) {
         listContainer.innerHTML = '<div class="text-center text-rose-500 dark:text-rose-400 py-4">Eroare la preluarea rutelor.</div>';
     }
 }
 
-function closeTrainModal() {
-    document.getElementById('train-modal').classList.add('hidden');
-}
-
-// Funcție actualizată să primească și exactOrig și exactDest
 function selectCfrTrain(type, depIso, durationHrs, exactOrig, exactDest, infoferLink, isTransfer) {
     const d = new Date(depIso);
     const fp = document.getElementById('trip-datetime')._flatpickr;
-    if(fp) fp.setDate(d);
+    if (fp && !isNaN(d.getTime())) {
+        fp.setDate(d);
+    }
     
-    // Salvăm numele oficiale direct din baza de date
     selectedTrain = { 
         type: type, 
-        durationHrs: durationHrs, 
+        durationHrs: parseFloat(durationHrs) || 2.5, 
         origStation: exactOrig, 
         destStation: exactDest, 
         link: infoferLink, 
-        isTransfer: isTransfer 
+        isTransfer: Boolean(isTransfer)
     };
     
     closeTrainModal();
     document.getElementById('btn-train-cfr').classList.add('ring-2', 'ring-emerald-400');
 }
 
+function closeTrainModal() {
+    document.getElementById('train-modal').classList.add('hidden');
+}
+
+// ==========================================
+// 10. CALCUL TRASEU ȘI PROGNOZĂ DESTINAȚIE
+// ==========================================
 function getForecastAtTime(weatherData, targetMs) {
     let minDiff = Infinity;
     let closestIdx = 0;
     weatherData.hourly.time.forEach((t, i) => {
         const timeMs = new Date(t).getTime();
         const diff = Math.abs(timeMs - targetMs);
-        if(diff < minDiff) { minDiff = diff; closestIdx = i; }
+        if (diff < minDiff) { minDiff = diff; closestIdx = i; }
     });
     return {
         temp: weatherData.hourly.temperature_2m[closestIdx],
@@ -829,7 +835,7 @@ async function processTrip() {
     const datetimeVal = document.getElementById('trip-datetime').value;
     const btn = document.getElementById('btn-process-trip');
 
-    if(!origName || !destName || !datetimeVal) { 
+    if (!origName || !destName || !datetimeVal) { 
         alert("Te rog completează locațiile și data!"); 
         return; 
     }
@@ -839,13 +845,13 @@ async function processTrip() {
     try {
         const origCoords = await getCoordinates(origName);
         const destCoords = await getCoordinates(destName);
-        if(!origCoords || !destCoords) { 
+        if (!origCoords || !destCoords) { 
             alert("Nu am putut localiza orașele."); 
             return; 
         }
 
         let durationHrs = 0;
-        let isTrainRoute = (tripMode === 'transit' && selectedTrain !== null);
+        const isTrainRoute = (tripMode === 'transit' && selectedTrain !== null);
 
         if (isTrainRoute) {
             if (selectedTrain.isTransfer) {
@@ -853,7 +859,7 @@ async function processTrip() {
                 durationHrs = (dist / 60) + 1.5;
                 selectedTrain.durationHrs = durationHrs;
             } else {
-                durationHrs = selectedTrain.durationHrs;
+                durationHrs = parseFloat(selectedTrain.durationHrs) || 2.5;
             }
         } else {
             if (tripMode === 'car') {
@@ -878,7 +884,7 @@ async function processTrip() {
         }
 
         const depDate = new Date(datetimeVal);
-        const arrDate = new Date(depDate.getTime() + durationHrs * 60 * 60 * 1000);
+        const arrDate = new Date(depDate.getTime() + durationHrs * 3600 * 1000);
         
         const h = Math.floor(durationHrs);
         const m = Math.round((durationHrs - h) * 60);
@@ -889,36 +895,19 @@ async function processTrip() {
         const arrOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit', hour12: false };
         document.getElementById('trip-arrival').textContent = arrDate.toLocaleString('ro-RO', arrOptions);
         
-        // --- Pregătim denumirile corecte cu "Gara" la nivel accesibil în toată funcția ---
-        const ensureGara = (name) => {
-            if (!name) return "";
-            const clean = name.split(',')[0].trim();
-            return /^gara\b/i.test(clean) ? clean : `Gara ${clean}`;
-        };
-
-        const rawOrig = (isTrainRoute && selectedTrain && selectedTrain.origStation) ? selectedTrain.origStation : origName;
-        const rawDest = (isTrainRoute && selectedTrain && selectedTrain.destStation) ? selectedTrain.destStation : destName;
-
-        const mapOrig = ensureGara(rawOrig);
-        const mapDest = ensureGara(rawDest);
-
-        const stationTag = document.getElementById('trip-station');
-        
-        // Extragem doar numele curat al orașelor (eliminăm virgulele sau detaliile administrative)
         const cleanOrig = origName.split(',')[0].trim();
         const cleanDest = destName.split(',')[0].trim();
-
+        
+        const stationTag = document.getElementById('trip-station');
+        
         if (tripMode === 'transit') {
             stationTag.innerHTML = `<i class="fa-solid fa-train-tram mr-2"></i> <span id="trip-station-name">Vezi traseul feroviar pe Maps</span>`;
-            // Trimitem doar orașele curate + transit: funcționează garantat atât în România, cât și internațional
             stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(cleanOrig)}&destination=${encodeURIComponent(cleanDest)}&travelmode=transit`;
             stationTag.classList.remove('hidden');
-            
         } else if (tripMode === 'car') {
             stationTag.innerHTML = `<i class="fa-solid fa-route mr-2"></i> <span id="trip-station-name">Vezi traseul auto pe Maps</span>`;
             stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(cleanOrig)}&destination=${encodeURIComponent(cleanDest)}&travelmode=driving`;
             stationTag.classList.remove('hidden');
-            
         } else {
             stationTag.classList.add('hidden');
         }
@@ -933,9 +922,11 @@ async function processTrip() {
         const wOrig = getForecastAtTime(origWeather, depDate.getTime());
         const wDest = getForecastAtTime(destWeather, arrDate.getTime());
 
-        // Afișare adaptivă: gara oficială dacă există, altfel orașul curat
-        document.getElementById('res-orig-name').textContent = (isTrainRoute && selectedTrain && selectedTrain.origStation) ? selectedTrain.origStation : cleanOrig;
-        document.getElementById('res-dest-name').textContent = (isTrainRoute && selectedTrain && selectedTrain.destStation) ? selectedTrain.destStation : cleanDest;
+        const dispOrig = (isTrainRoute && selectedTrain && selectedTrain.origStation) ? selectedTrain.origStation : cleanOrig;
+        const dispDest = (isTrainRoute && selectedTrain && selectedTrain.destStation) ? selectedTrain.destStation : cleanDest;
+        
+        document.getElementById('res-orig-name').textContent = dispOrig;
+        document.getElementById('res-dest-name').textContent = dispDest;
 
         const codeOrig = WMO_CODES[wOrig.code] || WMO_CODES[0];
         document.getElementById('res-orig-time').textContent = depDate.toLocaleTimeString('ro-RO', {hour:'2-digit', minute:'2-digit', hour12: false});
@@ -951,16 +942,16 @@ async function processTrip() {
 
         document.getElementById('trip-results').classList.remove('hidden');
 
-    } catch(e) {
+    } catch (e) {
         console.error(e);
-        alert("Eroare la procesare!");
+        alert("Eroare la procesare: " + e.message);
     } finally {
         btn.innerHTML = '<i class="fa-solid fa-bolt mr-2"></i> Procesează Datele';
     }
 }
 
 // ==========================================
-// 9. LOGICĂ CAMERE WEB CFR
+// 11. LOGICĂ CAMERE WEB CFR
 // ==========================================
 function openWebcamModal() {
     document.getElementById('webcam-modal').classList.remove('hidden');
@@ -971,7 +962,7 @@ function closeWebcamModal() {
 }
 
 // ==========================================
-// 10. INITIALIZARE LA INCARCAREA PAGINII
+// 12. INITIALIZARE LA INCARCAREA PAGINII
 // ==========================================
 const savedCity = localStorage.getItem('lastCity') || 'Constanța';
 document.getElementById('unit-label').textContent = `°${currentUnit}`;
