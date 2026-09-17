@@ -886,18 +886,26 @@ async function processTrip() {
         const stationTag = document.getElementById('trip-station');
         
         if (tripMode === 'transit') {
-            // Setăm locațiile oficiale de gară (dacă le avem din Infofer), altfel folosim numele orașelor
-            const mapOrig = (isTrainRoute && selectedTrain && selectedTrain.origStation) ? selectedTrain.origStation : origName;
-            const mapDest = (isTrainRoute && selectedTrain && selectedTrain.destStation) ? selectedTrain.destStation : destName;
+            // Funcție ajutătoare: adaugă "Gara" doar dacă nu există deja în denumire
+            const ensureGara = (name) => {
+                if (!name) return "";
+                const clean = name.split(',')[0].trim();
+                return /^gara\b/i.test(clean) ? clean : `Gara ${clean}`;
+            };
+
+            const rawOrig = (isTrainRoute && selectedTrain && selectedTrain.origStation) ? selectedTrain.origStation : origName;
+            const rawDest = (isTrainRoute && selectedTrain && selectedTrain.destStation) ? selectedTrain.destStation : destName;
+
+            const mapOrig = ensureGara(rawOrig);
+            const mapDest = ensureGara(rawDest);
             
             stationTag.innerHTML = `<i class="fa-solid fa-train-tram mr-2"></i> <span id="trip-station-name">Vezi traseul feroviar pe Maps</span>`;
-            // Folosim travelmode=transit pentru a forța afișarea șinelor de cale ferată și a transportului în comun
+            // Trimitem ambele puncte prefixate cu "Gara" și travelmode=transit
             stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(mapOrig)}&destination=${encodeURIComponent(mapDest)}&travelmode=transit`;
             stationTag.classList.remove('hidden');
             
         } else if (tripMode === 'car') {
             stationTag.innerHTML = `<i class="fa-solid fa-route mr-2"></i> <span id="trip-station-name">Vezi traseul auto pe Maps</span>`;
-            // Folosim travelmode=driving pentru mașină
             stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origName)}&destination=${encodeURIComponent(destName)}&travelmode=driving`;
             stationTag.classList.remove('hidden');
             
