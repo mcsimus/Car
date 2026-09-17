@@ -568,7 +568,23 @@ if (hourlySlider && hourlyContainer) {
 }
 
 // ==========================================
-// 7. LOGICĂ AUTOCOMPLETARE ȘI MODAL PLIMBARE
+// 7. ANIMAȚIE BUTON „PROCESEAZĂ DATELE”
+// ==========================================
+function triggerProcessButtonAnimation() {
+    const btn = document.getElementById('btn-process-trip');
+    if (!btn) return;
+    // Adăugăm puls și o strălucire subtilă de atracție
+    btn.classList.add('animate-pulse', 'ring-4', 'ring-emerald-300', 'dark:ring-emerald-500/60', 'scale-[1.02]');
+}
+
+function clearProcessButtonAnimation() {
+    const btn = document.getElementById('btn-process-trip');
+    if (!btn) return;
+    btn.classList.remove('animate-pulse', 'ring-4', 'ring-emerald-300', 'dark:ring-emerald-500/60', 'scale-[1.02]');
+}
+
+// ==========================================
+// 8. LOGICĂ AUTOCOMPLETARE ȘI MODAL PLIMBARE
 // ==========================================
 function attachAutocomplete(inputId, suggestId, onSelectCallback) {
     const input = document.getElementById(inputId);
@@ -583,6 +599,8 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
         if (inputId === 'trip-origin' || inputId === 'trip-dest') {
             selectedTrain = null;
             document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
+            // Declanșăm animația la scrierea manuală a oricărui caracter
+            triggerProcessButtonAnimation();
         }
 
         clearTimeout(timeout);
@@ -615,6 +633,9 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
                             const selectedName = item.getAttribute('data-name');
                             input.value = selectedName;
                             suggest.classList.add('hidden');
+                            if (inputId === 'trip-origin' || inputId === 'trip-dest') {
+                                triggerProcessButtonAnimation();
+                            }
                             if (onSelectCallback) onSelectCallback(selectedName);
                         });
                     });
@@ -638,7 +659,7 @@ let tripMode = 'car';
 let selectedTrain = null; 
 
 // ==========================================
-// 8. INITIALIZARE FLATPICKR (CALENDAR 24H)
+// 9. INITIALIZARE FLATPICKR (CALENDAR 24H)
 // ==========================================
 flatpickr("#trip-datetime", {
     enableTime: true,
@@ -650,6 +671,8 @@ flatpickr("#trip-datetime", {
         document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
         document.getElementById('trip-summary').classList.add('hidden');
         document.getElementById('trip-results').classList.add('hidden');
+        // Declanșăm animația la modificarea datei/orei
+        triggerProcessButtonAnimation();
     }
 });
 
@@ -660,6 +683,7 @@ function openTripModal() {
     
     const origInput = document.getElementById('trip-origin');
     origInput.value = lastLocName || localStorage.getItem('lastCity') || '';
+    clearProcessButtonAnimation();
 }
 
 function closeTripModal() {
@@ -667,6 +691,7 @@ function closeTripModal() {
     document.getElementById('trip-summary').classList.add('hidden');
     document.getElementById('trip-results').classList.add('hidden');
     selectedTrain = null;
+    clearProcessButtonAnimation();
 }
 
 function swapTripLocations() {
@@ -680,6 +705,9 @@ function swapTripLocations() {
     document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
     document.getElementById('trip-summary').classList.add('hidden');
     document.getElementById('trip-results').classList.add('hidden');
+    
+    // Declanșăm animația la inversarea locațiilor
+    triggerProcessButtonAnimation();
 }
 
 function setTripMode(mode) {
@@ -698,6 +726,9 @@ function setTripMode(mode) {
         btnCar.className = "flex-1 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800/60 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center";
         btnCfr.classList.remove('hidden'); 
     }
+
+    // Declanșăm animația la schimbarea modului de transport
+    triggerProcessButtonAnimation();
 }
 
 function fillCurrentLocationTrip() {
@@ -709,9 +740,14 @@ function fillCurrentLocationTrip() {
             const lon = position.coords.longitude;
             const name = await getExactCityName(lat, lon);
             origInput.value = name;
-        }, () => { origInput.value = savedCity; });
+            triggerProcessButtonAnimation();
+        }, () => { 
+            origInput.value = savedCity; 
+            triggerProcessButtonAnimation();
+        });
     } else {
         origInput.value = savedCity;
+        triggerProcessButtonAnimation();
     }
 }
 
@@ -724,7 +760,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 // ==========================================
-// 9. INTEROGARE ȘI SELECTARE TRENURI CFR
+// 10. INTEROGARE ȘI SELECTARE TRENURI CFR
 // ==========================================
 async function openTrainModal() {
     const origName = document.getElementById('trip-origin').value.trim();
@@ -766,7 +802,6 @@ async function openTrainModal() {
                 
                 if (isTransfer) {
                     const minsInDay = dep.getHours() * 60 + dep.getMinutes();
-                    // Eliminăm diacriticele pentru linkul Infofer pentru a garanta compatibilitatea 100%
                     const infoferOrig = removeDiacritics(exactOrig);
                     const infoferDest = removeDiacritics(exactDest);
                     infoferLink = `https://mersultrenurilor.infofer.ro/ro-RO/Itineraries?DepartureStationName=${encodeURIComponent(infoferOrig)}&ArrivalStationName=${encodeURIComponent(infoferDest)}&DepartureDate=${dateFormatted}&TimeSelectionId=0&MinutesInDay=${minsInDay}&OrderingTypeId=0&ConnectionsTypeId=1&BetweenTrainsMinimumMinutes=&ChangeStationName=`;
@@ -820,6 +855,9 @@ function selectCfrTrain(type, depIso, durationHrs, exactOrig, exactDest, infofer
     
     closeTrainModal();
     document.getElementById('btn-train-cfr').classList.add('ring-2', 'ring-emerald-400');
+    
+    // Declanșăm animația când s-a selectat trenul din listă
+    triggerProcessButtonAnimation();
 }
 
 function closeTrainModal() {
@@ -827,7 +865,7 @@ function closeTrainModal() {
 }
 
 // ==========================================
-// 10. CALCUL TRASEU ȘI PROGNOZĂ DESTINAȚIE
+// 11. CALCUL TRASEU ȘI PROGNOZĂ DESTINAȚIE
 // ==========================================
 function getForecastAtTime(weatherData, targetMs) {
     let minDiff = Infinity;
@@ -853,6 +891,9 @@ async function processTrip() {
         alert("Te rog completează locațiile și data!"); 
         return; 
     }
+
+    // Oprim animația imediat ce s-a apăsat butonul
+    clearProcessButtonAnimation();
 
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Se calculează...';
     
@@ -965,7 +1006,7 @@ async function processTrip() {
 }
 
 // ==========================================
-// 11. LOGICĂ CAMERE WEB CFR
+// 12. LOGICĂ CAMERE WEB CFR
 // ==========================================
 function openWebcamModal() {
     document.getElementById('webcam-modal').classList.remove('hidden');
@@ -976,7 +1017,7 @@ function closeWebcamModal() {
 }
 
 // ==========================================
-// 12. INITIALIZARE LA INCARCAREA PAGINII
+// 13. INITIALIZARE LA INCARCAREA PAGINII
 // ==========================================
 const savedCity = localStorage.getItem('lastCity') || 'Constanța';
 document.getElementById('unit-label').textContent = `°${currentUnit}`;
