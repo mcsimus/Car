@@ -892,9 +892,7 @@ async function processTrip() {
         return; 
     }
 
-    // Oprim animația imediat ce s-a apăsat butonul
     clearProcessButtonAnimation();
-
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Se calculează...';
     
     try {
@@ -906,6 +904,7 @@ async function processTrip() {
         }
 
         let durationHrs = 0;
+        let carDistanceText = '';
         const isTrainRoute = (tripMode === 'transit' && selectedTrain !== null);
 
         if (isTrainRoute) {
@@ -919,18 +918,35 @@ async function processTrip() {
         } else {
             if (tripMode === 'car') {
                 try {
-                    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${origCoords.longitude},${origCoords.latitude};${destCoords.longitude},${destCoords.latitude}?overview=false`;
+                    // Adăugăm alternatives=true pentru a analiza toate rutele posibile
+                    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${origCoords.longitude},${origCoords.latitude};${destCoords.longitude},${destCoords.latitude}?overview=false&alternatives=true`;
                     const osrmRes = await fetch(osrmUrl);
                     const osrmData = await osrmRes.json();
                     
                     if (osrmData.code === "Ok" && osrmData.routes.length > 0) {
+                        // Traseul principal (de regulă cel mai rapid ca timp)
                         durationHrs = osrmData.routes[0].duration / 3600;
+
+                        // Extragem distanțele tuturor variantelor găsite de OSRM (în km)
+                        const distances = osrmData.routes.map(r => Math.round(r.distance / 1000));
+                        const minDist = Math.min(...distances);
+                        const maxDist = Math.max(...distances);
+
+                        if (minDist !== maxDist) {
+                            carDistanceText = `${minDist} – ${maxDist} km`;
+                        } else {
+                            carDistanceText = `${minDist} km`;
+                        }
                     } else {
                         throw new Error("Ruta auto nu a putut fi calculată.");
                     }
                 } catch (err) {
                     const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
                     durationHrs = dist / 75;
+                    // Estimare de rezervă (cu 20-35% mai mult decât linia dreaptă pe șosele)
+                    const minEst = Math.round(dist * 1.20);
+                    const maxEst = Math.round(dist * 1.35);
+                    carDistanceText = `${minEst} – ${maxEst} km`;
                 }
             } else {
                 const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
@@ -950,6 +966,16 @@ async function processTrip() {
         const arrOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit', hour12: false };
         document.getElementById('trip-arrival').textContent = arrDate.toLocaleString('ro-RO', arrOptions);
         
+        // Afișăm sau ascundem rândul de distanță în funcție de modul ales
+        const distRow = document.getElementById('trip-distance-row');
+        const distVal = document.getElementById('trip-distance');
+        if (tripMode === 'car' && carDistanceText && distRow && distVal) {
+            distVal.textContent = carDistanceText;
+            distRow.classList.remove('hidden');
+        } else if (distRow) {
+            distRow.classList.add('hidden');
+        }
+
         const cleanOrig = origName.split(',')[0].trim();
         const cleanDest = destName.split(',')[0].trim();
         
