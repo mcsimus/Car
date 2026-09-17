@@ -829,14 +829,20 @@ async function processTrip() {
     const datetimeVal = document.getElementById('trip-datetime').value;
     const btn = document.getElementById('btn-process-trip');
 
-    if(!origName || !destName || !datetimeVal) { alert("Te rog completează locațiile și data!"); return; }
+    if(!origName || !destName || !datetimeVal) { 
+        alert("Te rog completează locațiile și data!"); 
+        return; 
+    }
 
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Se calculează...';
     
     try {
         const origCoords = await getCoordinates(origName);
         const destCoords = await getCoordinates(destName);
-        if(!origCoords || !destCoords) { alert("Nu am putut localiza orașele."); return; }
+        if(!origCoords || !destCoords) { 
+            alert("Nu am putut localiza orașele."); 
+            return; 
+        }
 
         let durationHrs = 0;
         let isTrainRoute = (tripMode === 'transit' && selectedTrain !== null);
@@ -883,32 +889,29 @@ async function processTrip() {
         const arrOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit', hour12: false };
         document.getElementById('trip-arrival').textContent = arrDate.toLocaleString('ro-RO', arrOptions);
         
+        // --- Pregătim denumirile corecte cu "Gara" la nivel accesibil în toată funcția ---
+        const ensureGara = (name) => {
+            if (!name) return "";
+            const clean = name.split(',')[0].trim();
+            return /^gara\b/i.test(clean) ? clean : `Gara ${clean}`;
+        };
+
+        const rawOrig = (isTrainRoute && selectedTrain && selectedTrain.origStation) ? selectedTrain.origStation : origName;
+        const rawDest = (isTrainRoute && selectedTrain && selectedTrain.destStation) ? selectedTrain.destStation : destName;
+
+        const mapOrig = ensureGara(rawOrig);
+        const mapDest = ensureGara(rawDest);
+
         const stationTag = document.getElementById('trip-station');
         
         if (tripMode === 'transit') {
-            // Funcție ajutătoare: adaugă "Gara" doar dacă nu există deja în denumire
-            const ensureGara = (name) => {
-                if (!name) return "";
-                const clean = name.split(',')[0].trim();
-                return /^gara\b/i.test(clean) ? clean : `Gara ${clean}`;
-            };
-
-            const rawOrig = (isTrainRoute && selectedTrain && selectedTrain.origStation) ? selectedTrain.origStation : origName;
-            const rawDest = (isTrainRoute && selectedTrain && selectedTrain.destStation) ? selectedTrain.destStation : destName;
-
-            const mapOrig = ensureGara(rawOrig);
-            const mapDest = ensureGara(rawDest);
-            
             stationTag.innerHTML = `<i class="fa-solid fa-train-tram mr-2"></i> <span id="trip-station-name">Vezi traseul feroviar pe Maps</span>`;
-            // Trimitem ambele puncte prefixate cu "Gara" și travelmode=transit
             stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(mapOrig)}&destination=${encodeURIComponent(mapDest)}&travelmode=transit`;
             stationTag.classList.remove('hidden');
-            
         } else if (tripMode === 'car') {
             stationTag.innerHTML = `<i class="fa-solid fa-route mr-2"></i> <span id="trip-station-name">Vezi traseul auto pe Maps</span>`;
             stationTag.href = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origName)}&destination=${encodeURIComponent(destName)}&travelmode=driving`;
             stationTag.classList.remove('hidden');
-            
         } else {
             stationTag.classList.add('hidden');
         }
@@ -923,7 +926,7 @@ async function processTrip() {
         const wOrig = getForecastAtTime(origWeather, depDate.getTime());
         const wDest = getForecastAtTime(destWeather, arrDate.getTime());
 
-        // Dacă avem rută de tren, folosim numele oficiale. Altfel, numele tastat.
+        // Atribuire denumiri în căsuțele de rezultate de jos
         document.getElementById('res-orig-name').textContent = (isTrainRoute && selectedTrain) ? mapOrig : origName.split(',')[0];
         document.getElementById('res-dest-name').textContent = (isTrainRoute && selectedTrain) ? mapDest : destName.split(',')[0];
 
@@ -942,6 +945,7 @@ async function processTrip() {
         document.getElementById('trip-results').classList.remove('hidden');
 
     } catch(e) {
+        console.error(e);
         alert("Eroare la procesare!");
     } finally {
         btn.innerHTML = '<i class="fa-solid fa-bolt mr-2"></i> Procesează Datele';
