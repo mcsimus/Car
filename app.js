@@ -99,14 +99,35 @@ setInterval(updateDateTime, 1000);
 updateDateTime();
 
 // ==========================================
-// 3. API FETCH
+// 3. GEOCODING ȘI API FETCH
 // ==========================================
 async function getCoordinates(city) {
     try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&addressdetails=1&limit=1&accept-language=ro`);
+        const cleanCity = city.split(',')[0].trim();
+        // Căutare primară prin Open-Meteo Geocoding
+        const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cleanCity)}&count=5&language=ro&format=json`);
         const data = await res.json();
-        if (data && data.length > 0) {
-            const place = data[0];
+        
+        if (data && data.results && data.results.length > 0) {
+            const sorted = data.results.sort((a, b) => {
+                const scoreA = (a.population || 0) + (a.country_code === 'RO' ? 5000000 : 0);
+                const scoreB = (b.population || 0) + (b.country_code === 'RO' ? 5000000 : 0);
+                return scoreB - scoreA;
+            });
+            const place = sorted[0];
+            return {
+                name: place.name,
+                latitude: place.latitude,
+                longitude: place.longitude,
+                country_code: place.country_code ? place.country_code.toUpperCase() : ''
+            };
+        }
+
+        // Fallback secundar Nominatim dacă locația nu este indexată în Open-Meteo
+        const nomRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&addressdetails=1&limit=1&accept-language=ro`);
+        const nomData = await nomRes.json();
+        if (nomData && nomData.length > 0) {
+            const place = nomData[0];
             const addr = place.address || {};
             const cityName = addr.city || addr.town || addr.village || addr.municipality || place.name || city;
             return {
@@ -573,7 +594,6 @@ if (hourlySlider && hourlyContainer) {
 function triggerProcessButtonAnimation() {
     const btn = document.getElementById('btn-process-trip');
     if (!btn) return;
-    // Adăugăm puls și o strălucire subtilă de atracție
     btn.classList.add('animate-pulse', 'ring-4', 'ring-emerald-300', 'dark:ring-emerald-500/60', 'scale-[1.02]');
 }
 
@@ -584,7 +604,7 @@ function clearProcessButtonAnimation() {
 }
 
 // ==========================================
-// 8. LOGICĂ AUTOCOMPLETARE ȘI MODAL PLIMBARE
+// 8. AUTOCOMPLETARE INTELIGENTĂ (OPEN-METEO)
 // ==========================================
 function attachAutocomplete(inputId, suggestId, onSelectCallback) {
     const input = document.getElementById(inputId);
@@ -599,31 +619,42 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
         if (inputId === 'trip-origin' || inputId === 'trip-dest') {
             selectedTrain = null;
             document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
-            // Declanșăm animația la scrierea manuală a oricărui caracter
             triggerProcessButtonAnimation();
         }
 
         clearTimeout(timeout);
+        // Pornim căutarea inteligentă de la minim 2 litere
         if (val.length < 2) return;
 
         timeout = setTimeout(async () => {
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&addressdetails=1&limit=8&accept-language=ro`);
+                // Interogăm motorul rapid de geocoding fără restricții rigide de 1 req/sec
+                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(val)}&count=10&language=ro&format=json`);
                 const data = await res.json();
                 
-                if (data && data.length > 0) {
-                    suggest.innerHTML = data.map(place => {
-                        const addr = place.address || {};
-                        const cityName = addr.city || addr.town || addr.village || addr.municipality || place.name || '';
-                        const stateName = addr.state ? `, ${addr.state}` : '';
-                        const countryName = addr.country ? ` (${addr.country})` : '';
+                if (data && data.results && data.results.length > 0) {
+                    // Ierarhizare: orașele din România primesc prioritate naturală, urmate de marile orașe globale
+                    const sortedResults = data.results.sort((a, b) => {
+                        const scoreA = (a.population || 0) + (a.country_code === 'RO' ? 5000000 : 0);
+                        const scoreB = (b.population || 0) + (b.country_code === 'RO' ? 5000000 : 0);
+                        return scoreB - scoreA;
+                    });
+
+                    suggest.innerHTML = sortedResults.map(place => {
+                        const cityName = place.name;
+                        const adminName = place.admin1 && place.admin1 !== cityName ? `, ${place.admin1}` : '';
+                        const countryName = place.country ? ` (${place.country})` : '';
+                        const isRO = place.country_code === 'RO';
                         
-                        return `<div class="px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700/60 cursor-pointer transition flex items-center" data-name="${cityName || place.display_name}">
-                            <i class="fa-solid fa-map-pin text-slate-400 dark:text-slate-500 mr-2 text-[10px]"></i>
-                            <div class="flex-1 truncate pointer-events-none">
-                                <span class="text-slate-600 dark:text-slate-400 text-sm font-medium">${cityName || place.name}</span>
-                                <span class="text-slate-400 dark:text-slate-500 text-[10px] ml-1">${stateName}${countryName}</span>
+                        return `<div class="px-3 py-2.5 hover:bg-slate-100 dark:hover:bg-slate-700/60 cursor-pointer transition flex items-center justify-between" data-name="${cityName}">
+                            <div class="flex items-center truncate pointer-events-none">
+                                <i class="fa-solid fa-map-pin text-slate-400 dark:text-slate-500 mr-2 text-[10px]"></i>
+                                <div class="truncate">
+                                    <span class="text-slate-700 dark:text-slate-200 text-sm font-semibold">${cityName}</span>
+                                    <span class="text-slate-400 dark:text-slate-500 text-[11px] ml-1">${adminName}${countryName}</span>
+                                </div>
                             </div>
+                            ${isRO ? '<span class="ml-2 text-[9px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 px-1.5 py-0.5 rounded">RO</span>' : ''}
                         </div>`;
                     }).join('');
                     suggest.classList.remove('hidden');
@@ -641,7 +672,7 @@ function attachAutocomplete(inputId, suggestId, onSelectCallback) {
                     });
                 }
             } catch(err) { console.error(err); }
-        }, 300);
+        }, 250);
     });
 
     document.addEventListener('click', (e) => {
@@ -671,7 +702,6 @@ flatpickr("#trip-datetime", {
         document.getElementById('btn-train-cfr').classList.remove('ring-2', 'ring-emerald-400');
         document.getElementById('trip-summary').classList.add('hidden');
         document.getElementById('trip-results').classList.add('hidden');
-        // Declanșăm animația la modificarea datei/orei
         triggerProcessButtonAnimation();
     }
 });
@@ -706,7 +736,6 @@ function swapTripLocations() {
     document.getElementById('trip-summary').classList.add('hidden');
     document.getElementById('trip-results').classList.add('hidden');
     
-    // Declanșăm animația la inversarea locațiilor
     triggerProcessButtonAnimation();
 }
 
@@ -727,7 +756,6 @@ function setTripMode(mode) {
         btnCfr.classList.remove('hidden'); 
     }
 
-    // Declanșăm animația la schimbarea modului de transport
     triggerProcessButtonAnimation();
 }
 
@@ -855,8 +883,6 @@ function selectCfrTrain(type, depIso, durationHrs, exactOrig, exactDest, infofer
     
     closeTrainModal();
     document.getElementById('btn-train-cfr').classList.add('ring-2', 'ring-emerald-400');
-    
-    // Declanșăm animația când s-a selectat trenul din listă
     triggerProcessButtonAnimation();
 }
 
@@ -907,7 +933,6 @@ async function processTrip() {
         let distanceText = '';
         const isTrainRoute = (tripMode === 'transit' && selectedTrain !== null);
 
-        // Obținem datele despre coridorul geografic real (distanțe reale pe relief)
         let routeDistances = [];
         try {
             const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${origCoords.longitude},${origCoords.latitude};${destCoords.longitude},${destCoords.latitude}?overview=false&alternatives=true`;
@@ -920,39 +945,32 @@ async function processTrip() {
                 }
             }
         } catch (err) {
-            // Fallback în caz de indisponibilitate a serverului de navigație
             const directDist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
             routeDistances = [Math.round(directDist * 1.15), Math.round(directDist * 1.30)];
             if (tripMode === 'car') durationHrs = directDist / 75;
         }
 
-        // 1. CALCUL DISTANȚĂ & DURATĂ
         if (isTrainRoute) {
-            // Durata feroviară
             if (selectedTrain.isTransfer) {
                 const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
                 durationHrs = (dist / 60) + 1.5;
                 selectedTrain.durationHrs = durationHrs;
 
-                // La transfer feroviar afișăm intervalul variantelor de legătură
                 const minDist = Math.min(...routeDistances);
                 const maxDist = Math.max(...routeDistances);
                 distanceText = minDist !== maxDist ? `~${minDist} – ${maxDist} km` : `~${minDist} km`;
             } else {
                 durationHrs = parseFloat(selectedTrain.durationHrs) || 2.5;
-                // La tren direct linia ferată este fixă (aproximativ egală cu lungimea coridorului)
                 const baseDist = routeDistances.length > 0 ? routeDistances[0] : Math.round(calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude) * 1.15);
                 distanceText = `~${baseDist} km (cale ferată)`;
             }
         } else if (tripMode === 'car') {
-            // La mașină afișăm intervalul tuturor rutelor rutiere disponibile
             if (routeDistances.length > 0) {
                 const minDist = Math.min(...routeDistances);
                 const maxDist = Math.max(...routeDistances);
                 distanceText = minDist !== maxDist ? `${minDist} – ${maxDist} km` : `${minDist} km`;
             }
         } else {
-            // Transport în comun fără tren selectat
             const dist = calculateDistance(origCoords.latitude, origCoords.longitude, destCoords.latitude, destCoords.longitude);
             durationHrs = (dist / 50) + 0.5;
             distanceText = `~${Math.round(dist * 1.2)} km`;
@@ -970,7 +988,6 @@ async function processTrip() {
         const arrOptions = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute:'2-digit', hour12: false };
         document.getElementById('trip-arrival').textContent = arrDate.toLocaleString('ro-RO', arrOptions);
         
-        // AFIȘARE DISTANȚĂ (activă atât la mașină, cât și la tren)
         const distRow = document.getElementById('trip-distance-row');
         const distVal = document.getElementById('trip-distance');
         if (distanceText && distRow && distVal) {
